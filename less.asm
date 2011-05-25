@@ -8,24 +8,28 @@ STACK_S ends
 
 ; Definizione di variabili e costanti
 DATA_S segment para 'data'
-	;Segmento del Program Segment Prefix
-	PSP DW ?
-	BOXparams DB 'X='
-	X DB ?
-	  DB ' Y='
-	Y DB ?
-	  DB 0Dh,0Ah,'$'
-	TestString 	DB 'Stringa di test. Contenuto del BOX',0Dh,0Ah
-				DB 'Riga 2',0Dh,0Ah
-				DB 'Riga 3',0Dh,0Ah
-				DB 'Riga 4',0Dh,0Ah
-				DB 'Riga 5',0Dh,0Ah
-				DB 'Riga 6',0Dh,0Ah
-				DB 'Riga 7',0Dh,0Ah
-				DB 'Riga 8',0Dh,0Ah
-				DB 'Riga 9',0Dh,0Ah
-				DB 'Riga A',0Dh,0Ah
-				DB 'Riga B',0Dh,0Ah,0
+
+	;The test string
+IFDEF longtest
+	theTestString DB 'A very long text string that exceeds the width'
+				  DB ' of the screen with its useless content',0,'$'
+ELSE
+IFDEF loremtest
+	theTestString DB 'Lorem ipsum dolor sit amet, consectetur '
+				  DB 'adipiscing elit. Donec a diam lectus. Sed sit '
+				  DB 'amet ipsum mauris. Maecenas congue ligula ac '
+				  DB 'quam viverra nec consectetur ante hendrerit. '
+				  DB 'Donec et mollis dolor. Praesent et diam eget '
+				  DB 'libero egestas mattis sit amet vitae augue. '
+				  DB 'Nam tincidunt congue enim, ut porta lorem lacinia'
+				  DB ' consectetur. Donec ut libero sed arcu vehicula '
+				  DB 'ultricies a non tortor. Lorem ipsum dolor sit '
+				  DB 'amet, consectetur adipiscing elit. Aenean ut '
+				  DB 'gravida lorem.',0
+ELSE
+	theTestString DB 'The test string.',0,'$'
+ENDIF
+
 DATA_S ends
 
 ; Definizione del codice
@@ -35,83 +39,78 @@ CODE_S segment para 'code'
 	
 	;procedura iniziale
 	MAIN_P proc near
-		;Carichiamo il registro DS con il nostro segmento dati
-		mov AX, seg DATA_S
-		mov DS, AX
-		
-		;Salviamo la locazione del PSP così da non richiederlo dopo
-		mov PSP, ES
-		
-		;Cambiamo la modalità video
-		; resetta il contenuto video
-		;Testo 80x25 - 16 colori
-		;Tabella modi: http://www.ctyme.com/intr/rb-0069.htm#Table10
-		;mov AH,00h ; 00h = change video mode
-		;mov AL,03h ; 03h = 80x25 16 colors
-		mov AX, 0003h 
-		int 10h
-		
-		; settiamo il cursore fullblock
-		mov CX, 0007h 
-		mov ah, 01h
-		int 10h
-		
-		mov ah, 3
-		mov al, 5
-		;stampa myTestString
-		push DS
-		pop ES
-		
-		mov SI,offset TestString
+		;impostiamo DS
+		mov AX,seg DATA_S
+		mov DS,AX
+
+		;main di test per la procedura BOX_P
+		mov ES,AX ;facciam puntare ES come DS
+		mov SI,offset theTestString
+		mov DX, 0205h ;testo a partire da riga 3 col 6
 		call BOX_P
 		
-		;Diciamo al dos di chiudere e liberare le risorse allocate
-		; mov ah,4Ch - mov al,00h ;AL: codice ritorno
+		;uscita dal programma
+		;mov AH,4Ch; mov AL,00h;
 		mov AX, 4C00h
 		int 21h
+		
 	MAIN_P endp
-
-	;BOX_P riempie un rettangolo con del testo
-	;riceve in ingresso un puntatore a una struttura così fatta:
-	;ES:SI - Stringa ASCII null terminated.
-	;AH,AL: X,Y
-	;BH,BL: Width, Height
+	
+	;;		BOX_P
+	;	riempie un rettangolo con del testo
+	;ES:SI - puntatore alla stringa contenuto (null terminated)
+	;DH=row, DL=column - Coordinate partenza - DX=(y,x)
+	;CH=height, CL=width - Dimensioni box
+	;
 	BOX_P proc near
-			
-		; stampa gli argomenti con cui è stata chiamata la procedura
-		;mov X,AH
-		;mov Y,AL
-		;add X,'0'
-		;add Y,'0'
-		;mov ah,09h
-		;mov dx, offset boxparams
-		;int 21h
 		
-		; Impostiamo l'origine del cursore - TODO: cambia coordinate
-		mov dh, al ; Y
-		mov dl, ah ; X
-		mov bh, 0; pagina 0
-		mov ah, 2; set cursor
+		;le funzioni BIOS per il testo di solito vogliono in BH
+		;il numero di pagina
+		mov BH, 00h
+		
+		;Impostiamo l'origine del cursore
+		;AH=02H, BH=#page, DH=row, DL=column
+		mov AH, 02h
 		int 10h
-		
-		;mov ah, 0Ah ;stampa il carattere sul cursore e basta
-		;mov bx, 0
-		;mov cx, 3
-		
-		mov ah, 0Eh ;stampa teletype, avanza il cursore e scroll
-					;ignora CX e BX - stampa sulla pagin corrente
-		;mov al, 'A'
-		cld ;clear directon, indirizzi aumentano
-carica:
-		lodsb ;moves [es:si] in AL		
-		cmp al,0 ;confrontiamo col terminatore
-		jz endString
-		int 10h
-		jmp carica
-endstring:
 
+IFDEF tty ;TTY mode - solo per test
+		;stampa la stringa usando la funzione BIOS
+		;"teletype print" che avanza il cursore da sola
+		;AH=0Eh, AL=char, BH=#page, BL=colore(in grafica)
+		cld ;DF=0, gli indirizzi aumentano
+		mov AH, 0Eh
+	printtty:
+		lodsb			;in AL il carattere della stringa
+		cmp AL, 00h 	;se il carattere è NUL usciamo
+		je endprinttty	;altrimenti lo stampiamo
+		int 10h			;chiamata al BIOS
+		jmp printtty
+	endprinttty:		;Fine ciclo stampa
+ENDIF ;end TTY mode
+
+		;Cursore autogestito
+		;inizialmente il cursore si trova all'angolo alto/destra del box
+		;stampa BIOS del carattere
+		;AH=0Ah, AL=char, BH=#page, CX=#repeat char
+		mov CX, 01h
+	print:
+		mov AH, 0Ah
+		lodsb			;in AL il carattere della stringa
+		cmp AL, 00h		;se il carattere è NUL usciamo
+		je endprint
+		int 10h			;altrimenti lo stampiamo
+		
+		;calcolo del punto successivo
+		inc DL	;per il momento è sulla colonna successiva
+		mov ah, 02h ;spostiamo il cursore
+		int 10h
+		
+		jmp print
+	endprint:
+		
 		ret
 	BOX_P endp
+	
 CODE_S ends
 
 ;Definizione entry point - termina l'assemblaggio
