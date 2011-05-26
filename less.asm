@@ -30,12 +30,16 @@ ELSE
 	theTestString DB 'The test string.',0,'$'
 ENDIF
 	defaultPage	DB ?
+	;origine del box - bordo sx e alto
 	origCol DB ?
 	origRow DB ?
+	;bordo del box - dx e basso
 	lastCol DB ?
 	lastRow DB ?
+	;dimensione del box
 	sizeW	DB ?
 	sizeH	DB ?
+	
 DATA_S ends
 
 ; Definizione del codice
@@ -55,6 +59,9 @@ CODE_S segment para 'code'
 		mov DX, 0205h ;testo a partire da riga 3 col 6
 		mov CX, 0303h ;testo in un box 3x3
 		call BOX_P
+		
+		;tentativo
+		mov fs,ax
 		
 		;uscita dal programma
 		;mov AH,4Ch; mov AL,00h;
