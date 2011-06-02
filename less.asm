@@ -22,6 +22,8 @@ DATA_S segment 'data'
 	;variabili usate da FRAME_P
 	lastCol	DB ?	;X+Width
 	lastRow	DB ?	;Y+Height
+	startCol DB ?	;X
+	startRow DB ?	;Y
 	;stringhe e variabili di debug.
 	IFDEF VERBOSE
 		msgTooLarge DB 'Box richiesto troppo largo.$'
@@ -63,7 +65,7 @@ CODE_S segment para 'code'
 
 		;Chiamata di test a FRAME_P
 		xor AX,AX
-		xor DX,DX
+		mov DX,0108h
 		call FRAME_P
 
 		;Ripristino il modo video precedente
@@ -77,26 +79,59 @@ CODE_S segment para 'code'
 		int 21h
 	MAIN_P endp
 	
-	;FRAME_P disegna cornici.
+	;FRAME_P disegna cornici.  
 	;Parametri:
 	;	DH=Y DL=X, AH=H, AL=W
 	FRAME_P proc near
 		;non necessito di rientranza quindi NON setto uno stack frame
-		;uso le variabili globali di DATA_S
-		
+		;uso le variabili globali di DATA_S		
+
+		;Memorizzo l'origine del box
+		mov word ptr startCol,DX
+
 		;controllo se la dimensione rientra nello schermo
 		mov BX,DX
 		add BH,AH
 		add BL,AL
 		
-		cmp BH,scrRows
-		jb lblTooLong
-		cmp BL,scrCols
-		jb lblTooLarge
+		cmp BH,scrRows-1 ;colonne e righe numerate da 0
+		ja lblTooLong
+		cmp BL,scrCols-1
+		ja lblTooLarge
 
 		;salvo la posizione dei bordi
+		;possibile unire le due righe successive
 		mov lastRow,BH	;ultima riga
 		mov lastCol,BL	;ultima colonna
+
+		;salvo la posizione attuale del cursore
+		mov AH, 03h
+		mov BH, kPage
+		int 10h
+		push DX
+
+		;disegno della cornice
+		; "/" o "\" per gli angoli, "|" o "-" per le linee
+		mov AH,02h
+		mov DX,word ptr startRow
+		int 10h		;cursore alto-sx
+		;mov AH,0Eh ;mov AL,'/'
+		mov AX,0E2Fh
+		int 10h		;stampa angolo alto-sx
+		xor CH,CH	;stampa bordo alto
+		mov CL,lastCol
+		sub CL,startCol
+		dec CL
+		dec CL
+		mov AL,'-'
+		rep int 10h
+		
+		;disegno completato, da qui in poi codici di uscita
+		;ripristino la posizione precedente del cursore
+		mov AH,02h
+		mov BH,kPage
+		pop DX
+		jmp lblExitOk
 		
 		lblTooLarge:
 		IFDEF VERBOSE
@@ -129,7 +164,7 @@ CODE_S segment para 'code'
 	;stampa un messaggio di debug
 	;mettere in SI l'offset del messaggio
 	DEBUG_P proc near
-		pusha
+		pusha ;mostrato come DB 60 dal debugger
 		;dove era il cursore?
 		mov AH,03h	;cursor query
 		mov BH,kPage	;pagina di default
