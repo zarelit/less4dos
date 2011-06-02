@@ -1,179 +1,161 @@
-; Implementazione di "less" per MS-DOS
-; Autore: David Costa <david@zarel.net>
-; Data di inizio: 17 Maggio 2011
+; Progetto per l'esame di Calcolatori 2
+; David Costa
 
-; Definizione stack
 STACK_S segment stack
-	DB 512 dup(?)
+	DB 256 dup('STACK+-~') ;Ogni ripetizione occupa 8 byte (4 word)
 STACK_S ends
 
-; Definizione di variabili e costanti
-DATA_S segment para 'data'
+DATA_S segment 'data'
+	;Opzioni
+	videoMode EQU 03h	;modo video 80x25
+	scrCols	EQU 80		;|coerente con videoMode
+	scrRows EQU 25		;|coerente con videoMode
+	kPage	EQU 00h		;pagina di testo di default
+	;Valori di uscita da FRAME_P 
+	kOk	  EQU 00h	;box disegnato
+	kErrLarge EQU 01h	;box troppo largo
+	kErrLong  EQU 02h	;box troppo lungo
 
-	;The test string
-IFDEF longtest
-	theTestString DB 'A very long text string that exceeds the width'
-				  DB ' of the screen with its useless content',0,'$'
-ELSE
-IFDEF loremtest
-	theTestString DB 'Lorem ipsum dolor sit amet, consectetur '
-				  DB 'adipiscing elit. Donec a diam lectus. Sed sit '
-				  DB 'amet ipsum mauris. Maecenas congue ligula ac '
-				  DB 'quam viverra nec consectetur ante hendrerit. '
-				  DB 'Donec et mollis dolor. Praesent et diam eget '
-				  DB 'libero egestas mattis sit amet vitae augue. '
-				  DB 'Nam tincidunt congue enim, ut porta lorem lacinia'
-				  DB ' consectetur. Donec ut libero sed arcu vehicula '
-				  DB 'ultricies a non tortor. Lorem ipsum dolor sit '
-				  DB 'amet, consectetur adipiscing elit. Aenean ut '
-				  DB 'gravida lorem.',0
-ELSE
-	theTestString DB 'The test string.',0,'$'
-	segmento DW seg DATA_S
-	offseto DW 0
-ENDIF
+	;variabili globali e di MAIN_P
+	oldMode	DB ?	;Modo video prima dell'ingresso nel programma
 
+	;variabili usate da FRAME_P
+	lastCol	DB ?	;X+Width
+	lastRow	DB ?	;Y+Height
+	;stringhe e variabili di debug.
+	IFDEF VERBOSE
+		msgTooLarge DB 'Box richiesto troppo largo.$'
+		msgTooLong DB 'Box richiesto troppo lungo.$'
+		msgChgMode DB 'Modo video cambiato in ',videoMode+'0','h.$'
+		msgFramepExit DB 'Esco da FRAME_P. con stato '
+		exitStatus    DB ? , '$'
+	ENDIF
 DATA_S ends
 
-; Definizione del codice
+;Direttiva sul processore. La CPU di default (8086) non implementa
+;alcune istruzioni tra cui PUSHA e POPA
+.186
+
 CODE_S segment para 'code'
-	;istruiamo l'assemblatore sul ruolo dei vari segmenti
+	;Controllo dei segmenti
 	assume CS:CODE_S, DS:DATA_S, SS:STACK_S
 	
-	;procedura iniziale
+	;Punto d'ingresso.
 	MAIN_P proc near
-		;impostiamo DS
-		mov AX,seg DATA_S
-		mov DS,AX
+		;Imposto il DS, ora contiene l'indirizzo del PSP
+		mov AX, seg DATA_S
+		mov DS, AX
 
-		lds dword ptr AX,segmento
-		;main di test per la procedura BOX_P
-		mov ES,AX ;facciam puntare ES come DS
-		mov SI,offset theTestString
-		mov DX, 0205h ;testo a partire da riga 3 col 6
-		mov CX, 0303h ;testo in un box 3x3
-		call BOX_P
+		;Salvo il modo video corrente
+		mov AH,0Fh	;Video-mode query
+		int 10h		;il video mode in AL
+		mov oldMode,AL
 		
-		;uscita dal programma
-		;mov AH,4Ch; mov AL,00h;
+		;Imposto l'80x25
+		;TODO: modo 02h e 03h cosa cambia in VGA?
+		mov AX,0003h
+		int 10h
+		IFDEF VERBOSE
+			;stampo conferma cambio modo
+			mov SI,offset msgChgMode
+			call DEBUG_P
+		ENDIF		
+
+		;Chiamata di test a FRAME_P
+		xor AX,AX
+		xor DX,DX
+		call FRAME_P
+
+		;Ripristino il modo video precedente
+;		mov AH,00h	;Video-mode set
+;		mov AL,oldMode
+;		int 10h
+
+		;Esco correttamente dal dos
+		;AH=4C, AL=valore ritorno
 		mov AX, 4C00h
 		int 21h
-		
 	MAIN_P endp
 	
-	;;		BOX_P
-	;	riempie un rettangolo con del testo
-	;ES:SI - puntatore alla stringa contenuto (null terminated)
-	;DH=row, DL=column - Coordinate partenza - DX=(y,x)
-	;CH=height, CL=width - Dimensioni box
-	;
-	BOX_P proc near
+	;FRAME_P disegna cornici.
+	;Parametri:
+	;	DH=Y DL=X, AH=H, AL=W
+	FRAME_P proc near
+		;non necessito di rientranza quindi NON setto uno stack frame
+		;uso le variabili globali di DATA_S
+		
+		;controllo se la dimensione rientra nello schermo
+		mov BX,DX
+		add BH,AH
+		add BL,AL
+		
+		cmp BH,scrRows
+		jb lblTooLong
+		cmp BL,scrCols
+		jb lblTooLarge
 
-		;NOTA: 	i caratteri non stampabili rendono difficile la gestione
-		;		del cursore in quanto rendono difficilmente prevedibile
-		;		(a meno di non controllare tutte le casistiche) la nuova
-		;		posizione del cursore.
-		;		La filosofia che si segue ora è lasciar fare al bios
-		;		l'avanzamento del cursore e aggiustare poi il cursore
-		; 		per farlo rientrare nel box
+		;salvo la posizione dei bordi
+		mov lastRow,BH	;ultima riga
+		mov lastCol,BL	;ultima colonna
 		
-		;NOTA2: Questa funzione permette di disegnare box con cornici.
-		;		Al fine di velocizzare le operazioni di disegno in caso
-		;		di box senza testo (a volte utili) il disegno della
-		;		cornice e del testo sono separate e disegnare un box
-		;		con testo e cornice equivale a disegnare la cornice
-		;		e poi il testo in un box un po' più piccolo e frameless
-		
-		;===> NEW mode
-		;usa la teletype print e poi controlla dove si trova il cursore
-		cld				;DF=0, gli indirizzi sono crescenti
-		
-		;I registri general purpose non ci bastano perchè le chiamate
-		;al BIOS ne vogliono parecchi settati e quindi non possiamo
-		;contenere i valori che ci servono durante tutta la stampa
-		
-		;salviamo i parametri con cui siamo stati chiamati
-		;mov origCol, DL; mov origRow, DH
-		mov word PTR origCol, DX
-		;mov width, CL; mov height, CH
-		mov word PTR sizeW, CX
-		;calcoliamo il bordo della finestra
-		mov word PTR lastCol, DX
-		add lastCol,CL
-		add lastRow,CH
-		
-		
-		;get video mode - AH=0Fh
-		;ritorna: AH=#cols, AL=disp mode, BH=#active page
-		mov AH,0Fh
-		int 10h
-		mov defaultPage,BH ;salviamo la pagina di default
-		
-		;Impostiamo l'origine del cursore
-		;AH=02H, BH=#page, DH=row, DL=column
-		mov AH, 02h
-		int 10h
-		
-	newmode:
-		mov AH, 0Eh		;stampa teletype del bios
-		lodsb			;carichiamo un byte dalla stringa
-		cmp AL, 00h		;se è il terminatore si esce
-		je endnewmode
-		int 10h			;se non è il terminatore si stampa
-		
-		;stato cursore
-		;params: AH=03h, BH=#pagina 
-		;ritorna AX=0,CH=#scanline start, CL=#scanline end,
-		;		 DH=Row, DL=Column
-		mov AH, 03h
-		int 10h
-		
-		
-		
-		jmp	newmode		;e si passa alla lettera successiva
-	endnewmode:
-		
-IFDEF tty ;TTY mode - solo per test
-		;stampa la stringa usando la funzione BIOS
-		;"teletype print" che avanza il cursore da sola
-		;AH=0Eh, AL=char, BH=#page, BL=colore(in grafica)
-		cld ;DF=0, gli indirizzi aumentano
-		mov AH, 0Eh
-	printtty:
-		lodsb			;in AL il carattere della stringa
-		cmp AL, 00h 	;se il carattere è NUL usciamo
-		je endprinttty	;altrimenti lo stampiamo
-		int 10h			;chiamata al BIOS
-		jmp printtty
-	endprinttty:		;Fine ciclo stampa
-ENDIF ;end TTY mode
+		lblTooLarge:
+		IFDEF VERBOSE
+			mov SI,offset msgTooLarge
+			call DEBUG_P
+		ENDIF
+		mov AH, kErrLarge
+		jmp lblExit
+		lblTooLong:
+		IFDEF VERBOSE
+			mov SI,offset msgTooLong
+			call DEBUG_P
+		ENDIF
+		mov AH,kErrLong
+		jmp lblExit
 
-IFDEF dumb
-		;Cursore autogestito
-		;inizialmente il cursore si trova all'angolo alto/destra del box
-		;stampa BIOS del carattere
-		;AH=0Ah, AL=char, BH=#page, CX=#repeat char
-		mov CX, 01h
-	print:
-		mov AH, 0Ah
-		lodsb			;in AL il carattere della stringa
-		cmp AL, 00h		;se il carattere è NUL usciamo
-		je endprint
-		int 10h			;altrimenti lo stampiamo
-		
-		;calcolo del punto successivo
-		inc DL	;per il momento è sulla colonna successiva
-		mov ah, 02h ;spostiamo il cursore
-		int 10h
-		
-		jmp print
-	endprint:
-ENDIF ;end DUMB print
-
+		lblExitOk:
+		mov AH,kOk
+		lblExit:
+		IFDEF VERBOSE
+			mov SI,offset msgFramepExit
+			mov exitStatus,AH
+			add exitStatus,'0'
+			call DEBUG_P
+		ENDIF
 		ret
-	BOX_P endp
-	
+	FRAME_P endp
+
+	IFDEF VERBOSE
+	;stampa un messaggio di debug
+	;mettere in SI l'offset del messaggio
+	DEBUG_P proc near
+		pusha
+		;dove era il cursore?
+		mov AH,03h	;cursor query
+		mov BH,kPage	;pagina di default
+		int 10h
+		push DX		;DX=posizione del cursore
+		;messaggio sull'ultima riga come un messaggio di stato
+		mov DH,scrRows-1
+		mov DL,0
+		mov AH,02h	;set cursor
+		int 10h
+		;stampa messaggio
+		mov DX,SI
+		mov AH,09h ;stampa messaggio DOS
+		int 21h
+		;attendo un tasto.
+		mov AH,00h	;key wait
+		int 16h		;BIOS keyboard services
+		;ritorno del cursore
+		pop DX
+		mov AH,02h
+		int 10h
+		popa
+		ret
+	DEBUG_P endp
+	ENDIF	
 CODE_S ends
 
-;Definizione entry point - termina l'assemblaggio
+;fine assemblaggio, dichiaro l'entry point
 end MAIN_P
