@@ -4,6 +4,7 @@
 
 ; Definizione stack
 STACK_S segment stack
+	DB 512 dup(?)
 STACK_S ends
 
 ; Definizione di variabili e costanti
@@ -28,18 +29,10 @@ IFDEF loremtest
 				  DB 'gravida lorem.',0
 ELSE
 	theTestString DB 'The test string.',0,'$'
+	segmento DW seg DATA_S
+	offseto DW 0
 ENDIF
-	defaultPage	DB ?
-	;origine del box - bordo sx e alto
-	origCol DB ?
-	origRow DB ?
-	;bordo del box - dx e basso
-	lastCol DB ?
-	lastRow DB ?
-	;dimensione del box
-	sizeW	DB ?
-	sizeH	DB ?
-	
+
 DATA_S ends
 
 ; Definizione del codice
@@ -53,15 +46,13 @@ CODE_S segment para 'code'
 		mov AX,seg DATA_S
 		mov DS,AX
 
+		lds dword ptr AX,segmento
 		;main di test per la procedura BOX_P
 		mov ES,AX ;facciam puntare ES come DS
 		mov SI,offset theTestString
 		mov DX, 0205h ;testo a partire da riga 3 col 6
 		mov CX, 0303h ;testo in un box 3x3
 		call BOX_P
-		
-		;tentativo
-		mov fs,ax
 		
 		;uscita dal programma
 		;mov AH,4Ch; mov AL,00h;
