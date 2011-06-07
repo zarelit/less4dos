@@ -67,8 +67,8 @@ CODE_S segment para 'code'
 		ENDIF		
 
 		;Chiamata di test a FRAME_P
-		mov AX,0406h
-		mov DX,0201h
+		mov AX,1950h
+		mov DX,0000h
 		call FRAME_P
 
 		;Ripristino il modo video precedente
@@ -179,6 +179,9 @@ CODE_S segment para 'code'
 			inc DH
 			mov AH,02h
 			int 10h
+			IFDEF VERBOSE
+				call DEBUG_CUR_P
+			ENDIF
 			mov AH,0Eh
 			int 10h
 			dec CX	
@@ -190,6 +193,9 @@ CODE_S segment para 'code'
 			inc DH
 			mov AH,02h
 			int 10h
+			IFDEF VERBOSE
+				call DEBUG_CUR_P
+			ENDIF
 			mov AH,0Eh
 			int 10h
 			dec CX
