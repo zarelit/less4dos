@@ -19,33 +19,41 @@ DATA_S segment 'data'
 
 	;variabili globali e di MAIN_P
 	oldMode	DB ?	;Modo video prima dell'ingresso nel programma
+	testText DB 'Una interessante stringa che non va a capo',0h
 
 	;variabili usate da FRAME_P
-	lastCol	DB ?	;X+Width
-	lastRow	DB ?	;Y+Height
-	startCol DB ?	;X
-	startRow DB ?	;Y
 	frameW DB ?	;Larghezza
 	frameH DB ?	;Altezza
 	internW DW ?	;numero trattini orizzontali
 	internH DW ?	;numero trattini verticali
 	rowPointer DW ?	;indirizzo inizio riga corrente
-
+	
 	;stringhe e variabili di debug.
 	IFDEF VERBOSE
+		newLine DB 0Dh,0Ah
+		msgNoLog   DB 'Impossibile creare il file di log. uscita.$'
 		msgTooLarge DB 'Box richiesto troppo largo.$'
 		msgTooLong DB 'Box richiesto troppo lungo.$'
 		msgChgMode DB 'Modo video cambiato in ',videoMode+'0','h.$'
 		msgMoveCur DB 'Muovo il cursore in (riga,colonna) ('
-		curRow	DB ?,','
-		curCol  DB ?,')$'
+		curRow	DW ?
+			DB ','
+		curCol  DW ?
+			DB ')$'
 		msgFramepExit DB 'Esco da FRAME_P. con stato '
-		exitStatus    DB ? , '$'
+		exitStatus    DW ? 
+			      DB '$'
 		msgCallFrameP DB 'Chiamo FRAME_P da (riga,colonna) ('
-		callDH DB ?,','
-		callDL DB ?,') e dimensioni ('
-		callAH DB ?,','
-		callAL DB ?,')$'
+		callDH DW ?
+		       DB ','
+		callDL DW ?
+		       DB ') e dimensioni ('
+		callAH DW ? 
+		       DB ','
+		callAL DW ?
+		       DB ')$'
+		logFileName DB 'lesslog.txt',0
+		logHandle DW ?
 	ENDIF
 DATA_S ends
 
@@ -63,6 +71,10 @@ CODE_S segment para 'code'
 		;Imposto il DS, ora contiene l'indirizzo del PSP
 		mov AX, seg DATA_S
 		mov DS, AX
+		
+		IFDEF VERBOSE
+			call DEBUG_INIT_P
+		ENDIF
 
 		;Salvo il modo video corrente
 		mov AH,0Fh	;Video-mode query
@@ -71,7 +83,7 @@ CODE_S segment para 'code'
 		
 		;Imposto l'80x25
 		;02h->16 grigio, 03h->colori
-		mov AX,0003h
+		mov AX,videoMode
 		int 10h
 		IFDEF VERBOSE
 			;stampo conferma cambio modo
@@ -80,37 +92,45 @@ CODE_S segment para 'code'
 		ENDIF		
 
 		;Chiamata di test a FRAME_P
-		;mov AX,1950h
-		;mov DX,0000h
+		;Fullscreen
+		mov AX,1950h
+		mov DX,0000h
+		;Esempio
 		;mov DX,0305h
 		;mov AX,0506h
-		mov AX,0406h
-		mov DX,0201h
+		;Esempio sul bloc notes
+		;mov AX,0406h
+		;mov DX,0201h
 		IFDEF VERBOSE
-			mov callAH,AH
-			mov callAL,AL
-			mov callDH,DH
-			mov callDL,DL
-			add callAH,'0'
-			add callAL,'0'
-			add callDH,'0'
-			add callDL,'0'
+			push AX
+			push DX
+			call HEX2ASCII ;converto AL
+			mov callAL,AX
+			mov AL,AH
+			call HEX2ASCII
+			mov callAH,AX
+			mov AL,DH
+			call HEX2ASCII
+			mov callDH,AX
+			mov AL,DL
+			call HEX2ASCII
+			mov callDL,AX
 			mov SI, offset msgCallFrameP
 			call DEBUG_P
+			pop DX
+			pop AX
 		ENDIF
 		call FRAME_P
-		;Giusto un test - scrivo nella RAM video
-		;mov AX,0B800h
-		;mov ES,AX
-		;mov DI,0001h
-		;mov ES:[di],byte ptr 'F'
 
 		;Ripristino il modo video precedente
 ;		mov AH,00h	;Video-mode set
 ;		mov AL,oldMode
 ;		int 10h
 
-		;Esco correttamente dal dos
+		;Esco correttamente al dos
+		IFDEF VERBOSE
+			call DEBUG_END_P
+		ENDIF
 		;AH=4C, AL=valore ritorno
 		mov AX, 4C00h
 		int 21h
@@ -123,8 +143,7 @@ CODE_S segment para 'code'
 		;non necessito di rientranza quindi NON setto uno stack frame
 		;uso le variabili globali di DATA_S		
 
-		;Memorizzo l'origine del box
-		mov word ptr startCol,DX
+		;Memorizzo le dimensioni del box
 		mov word ptr frameW,AX
 
 		;controllo se la dimensione rientra nello schermo
@@ -145,10 +164,6 @@ CODE_S segment para 'code'
 			jmp lblTooLarge
 		toNormalPath:
 
-		;salvo la posizione dell'ultimo punto
-		;mov lastRow,BH	;ultima riga ;mov lastCol,BL	;ultima colonna
-		mov word ptr lastCol,BX ;punto basso-dx
-		
 		;Faccio puntare l'extra segment alla memoria video.
 		mov BX,kSegVideo
 		mov ES,BX
@@ -237,57 +252,153 @@ CODE_S segment para 'code'
 		mov AH,kOk
 		lblExit:
 		IFDEF VERBOSE
+			push AX
 			mov SI,offset msgFramepExit
-			mov exitStatus,AH
-			add exitStatus,'0'
+			mov AL,AH
+			call HEX2ASCII
+			mov exitStatus,AX
 			call DEBUG_P
+			pop AX
 		ENDIF
 		ret
 	FRAME_P endp
 
+	;TEXT_P riempie un rettangolo con del testo
+	;AX,DX come FRAME_P
+	;DS:SI punta al testo (null terminated)
+	;uso le stesse variabili di FRAME_P, TEXT_P non è mai chiamata da dentro
+	;il corpo di FRAME_P
+	TEXT_P proc near
+		mov word ptr frameW,AX
+		
+	TEXT_P endp
+
 	IFDEF VERBOSE
+	;in AL il byte da convertire, in AX i due ASCII corrispondenti
+	HEX2ASCII proc near
+		push BX
+		push CX
+		mov BL,AL
+		mov CL,4
+		shl BL,CL
+		shr BL,CL ;azzerata il nibble più significativo
+		add BL,'0'
+		mov AH,BL ;in AH l'ASCII della cifra meno significativa.
+		mov BL,AL
+		shr BL,CL
+		add BL,'0'
+		mov AL,BL ;in AL l'ASCII della cifra più significativa
+		pop CX
+		pop BX
+		ret
+	HEX2ASCII endp
 	;stampa un messaggio di debug
 	;mettere in SI l'offset del messaggio
 	DEBUG_P proc near
 		pusha ;mostrato come DB 60 dal debugger
-		;dove era il cursore?
-		mov AH,03h	;cursor query
-		mov BH,kPage	;pagina di default
-		int 10h
-		push DX		;DX=posizione del cursore
-		;messaggio sull'ultima riga come un messaggio di stato
-		mov DH,scrRows-1
-		mov DL,0
-		mov AH,02h	;set cursor
-		int 10h
-		;pulisco la riga
-		mov CX,scrCols
-		;mov AH,0Ah ;mov AL,' '
-		mov AX,0A20h 	;stampa CX volte l'ASCII in AL
-		int 10h		;senza muovere il cursore
+		;"Vecchia" debug function che stampava il messaggio in basso
+		;;dove era il cursore?
+		;mov AH,03h	;cursor query
+		;mov BH,kPage	;pagina di default
+		;int 10h
+		;push DX		;DX=posizione del cursore
+		;;messaggio sull'ultima riga come un messaggio di stato
+		;mov DH,scrRows-1
+		;mov DL,0
+		;mov AH,02h	;set cursor
+		;int 10h
+		;;pulisco la riga
+		;mov CX,scrCols
+		;;mov AH,0Ah ;mov AL,' '
+		;mov AX,0A20h 	;stampa CX volte l'ASCII in AL
+		;int 10h		;senza muovere il cursore
 
-		;stampa messaggio
-		mov DX,SI
-		mov AH,09h ;stampa messaggio DOS
+		;;stampa messaggio
+		;mov DX,SI
+		;mov AH,09h ;stampa messaggio DOS
+		;int 21h
+		;;attendo un tasto.
+		;mov AH,00h	;key wait
+		;int 16h		;BIOS keyboard services
+		;;ritorno del cursore
+		;pop DX
+		;mov AH,02h
+		;int 10h
+
+		;"Nuova" debug function che stampa nel file di log
+		mov DX,SI ;la funzione di scrittura su file vuole i dati in DS:DX
+		mov DI,SI
+		push DS
+		pop ES
+		mov CX,0FFFFh ;conteggio dei caratteri
+		mov AL,'$'    ;cerco il terminatore
+		cld
+		repne scasb
+		not CX
+		dec CX ;togliamo il terminatore
+		mov BX,logHandle
+		mov AH,40h ;operazione di scrittura
+		int 21h ;scriviamo il log
+		;scriviamo un a capo
+		mov CX,02h
+		mov DX,offset newLine
+		mov AH,40h
 		int 21h
-		;attendo un tasto.
-		mov AH,00h	;key wait
-		int 16h		;BIOS keyboard services
-		;ritorno del cursore
-		pop DX
-		mov AH,02h
-		int 10h
 		popa
 		ret
 	DEBUG_P endp
+	
+	;DEBUG_INIT_P apre il file di log.
+	DEBUG_INIT_P proc near
+		pusha
+		;3Ch non va bene per aprire file in scrittura su FAT 32
+		;cambio con la funzione AX=6C00h
+		;mov AH,3Ch ;crea file e lo apre in scrittura
+		;mov DX,offset logFileName
+		;mov CX,0	;nessun attributo speciale
+		;int 21h	;apro il file
+		mov AX,6C00h ;apri file "estesa"
+		mov CX,00h   ;attributi creazione file
+		;mov DH,00h   ;reserved. 
+		;mov DL,11h   ;comportamento: 11=crea se non esiste, apri se esiste
+		mov DX,0011h
+		mov SI,offset logFileName
+		;mov BL,01000001b ;sola scrittura, nessuna protezione, ereditato
+		mov BL,41h
+		mov BH,08h ;apertura "estesa" per FAT32
+		int 21h
+		jc @@	;check d'errore, label anonima
+		mov logHandle,AX
+		popa
+		ret
+		@@:
+		mov AH,09h	;errore. stampo ed esco.
+		mov DX,offset msgNoLog
+		int 21h
+		mov AX,4C00h
+		int 21h
+	DEBUG_INIT_P endp
+
+	;DEBUG_END_P chiude il file di log
+	DEBUG_END_P proc near
+		pusha
+		mov AH,3Eh
+		mov BX,logHandle
+		int 21
+		popa
+	DEBUG_END_P endp
 
 	DEBUG_CUR_P proc near
+		push AX
 		mov SI, offset msgMoveCur
-		mov curRow,DH
-		mov curCol,DL
-		add curCol,'0'
-		add curRow,'0'
+		mov AL,DH
+		call HEX2ASCII
+		mov curRow,AX
+		mov AL,DL
+		call HEX2ASCII
+		mov curCol,AX
 		call DEBUG_P
+		pop AX
 		ret
 	DEBUG_CUR_P endp
 	ENDIF	
