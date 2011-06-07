@@ -100,9 +100,15 @@ CODE_S segment para 'code'
 		dec BH		;comprensiva dell'ultima riga/colonna
 
 		cmp BH,scrRows-1 ;confronto con il bordo schermo
-		ja lblTooLong
+		ja toLongError
 		cmp BL,scrCols-1
-		ja lblTooLarge
+		ja toLargeError
+		jmp toNormalPath
+		toLongError:
+			jmp lblTooLong
+		toLargeError:
+			jmp lblTooLarge
+		toNormalPath:
 
 		;salvo la posizione dell'ultimo punto
 		;mov lastRow,BH	;ultima riga ;mov lastCol,BL	;ultima colonna
@@ -116,6 +122,7 @@ CODE_S segment para 'code'
 
 		;disegno della cornice
 		; "/" o "\" per gli angoli, "|" o "-" per le linee
+		;Disegno righe orizzontali
 		mov AH,02h
 		mov DX,word ptr startCol
 		int 10h		;cursore alto-sx
@@ -143,7 +150,7 @@ CODE_S segment para 'code'
 		mov AL,'\'	;stampa angolo alto-dx
 		int 10h
 		;stampa teletype per la riga in basso, prima muovo il cursore
-		mov AX,02h
+		mov AH,02h
 		mov DH,lastRow
 		mov DL,startCol
 		int 10h		;cursore basso-sx
@@ -160,7 +167,33 @@ CODE_S segment para 'code'
 		jnz lower
 		mov AL,'/'	;stampa angolo basso-dx
 		int 10h
-
+		;Disegno righe verticali prima SX poi DX
+		xor CH,CH
+		mov CL,lastRow 
+		sub CL,startRow
+		dec CX
+		push CX		;ci servirà dopo - conteggio tratti verticali
+		mov AL,'|'
+		mov DX,word ptr startCol
+		left:
+			inc DH
+			mov AH,02h
+			int 10h
+			mov AH,0Eh
+			int 10h
+			dec CX	
+		jnz left
+		pop CX		;la riga DX è lunga come la SX
+		mov DH,startRow
+		mov DL,lastCol
+		right:
+			inc DH
+			mov AH,02h
+			int 10h
+			mov AH,0Eh
+			int 10h
+			dec CX
+		jnz right
 
 		;disegno completato, da qui in poi codici di uscita
 		;ripristino la posizione precedente del cursore
@@ -173,14 +206,14 @@ CODE_S segment para 'code'
 		ENDIF
 		jmp lblExitOk
 		
-		lblTooLarge:
+		lblTooLarge LABEL near
 		IFDEF VERBOSE
 			mov SI,offset msgTooLarge
 			call DEBUG_P
 		ENDIF
 		mov AH, kErrLarge
 		jmp lblExit
-		lblTooLong:
+		lblTooLong LABEL near
 		IFDEF VERBOSE
 			mov SI,offset msgTooLong
 			call DEBUG_P
@@ -215,6 +248,12 @@ CODE_S segment para 'code'
 		mov DL,0
 		mov AH,02h	;set cursor
 		int 10h
+		;pulisco la riga
+		mov CX,scrCols
+		;mov AH,0Ah ;mov AL,' '
+		mov AX,0A20h 	;stampa CX volte l'ASCII in AL
+		int 10h		;senza muovere il cursore
+
 		;stampa messaggio
 		mov DX,SI
 		mov AH,09h ;stampa messaggio DOS
@@ -237,6 +276,7 @@ CODE_S segment para 'code'
 		add curCol,'0'
 		add curRow,'0'
 		call DEBUG_P
+		ret
 	DEBUG_CUR_P endp
 	ENDIF	
 CODE_S ends
