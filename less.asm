@@ -11,6 +11,7 @@ DATA_S segment 'data'
 	scrCols	EQU 80		;|coerente con videoMode
 	scrRows EQU 25		;|coerente con videoMode
 	kPage	EQU 00h		;pagina di testo di default
+	kSegVideo EQU 0B800h	;segmento video. Lo 0 davanti al numero è necessario a MASM
 	;Valori di uscita da FRAME_P 
 	kOk	  EQU 00h	;box disegnato
 	kErrLarge EQU 01h	;box troppo largo
@@ -24,6 +25,12 @@ DATA_S segment 'data'
 	lastRow	DB ?	;Y+Height
 	startCol DB ?	;X
 	startRow DB ?	;Y
+	frameW DB ?	;Larghezza
+	frameH DB ?	;Altezza
+	internW DW ?	;numero trattini orizzontali
+	internH DW ?	;numero trattini verticali
+	rowPointer DW ?	;indirizzo inizio riga corrente
+
 	;stringhe e variabili di debug.
 	IFDEF VERBOSE
 		msgTooLarge DB 'Box richiesto troppo largo.$'
@@ -75,8 +82,10 @@ CODE_S segment para 'code'
 		;Chiamata di test a FRAME_P
 		;mov AX,1950h
 		;mov DX,0000h
-		mov DX,0305h
-		mov AX,0506h
+		;mov DX,0305h
+		;mov AX,0506h
+		mov AX,0406h
+		mov DX,0201h
 		IFDEF VERBOSE
 			mov callAH,AH
 			mov callAL,AL
@@ -116,6 +125,7 @@ CODE_S segment para 'code'
 
 		;Memorizzo l'origine del box
 		mov word ptr startCol,DX
+		mov word ptr frameW,AX
 
 		;controllo se la dimensione rientra nello schermo
 		mov BX,DX
@@ -138,111 +148,74 @@ CODE_S segment para 'code'
 		;salvo la posizione dell'ultimo punto
 		;mov lastRow,BH	;ultima riga ;mov lastCol,BL	;ultima colonna
 		mov word ptr lastCol,BX ;punto basso-dx
-
-		;salvo la posizione attuale del cursore
-		mov AH, 03h
-		mov BH, kPage
-		int 10h
-		push DX
-
-		;disegno della cornice
-		; "/" o "\" per gli angoli, "|" o "-" per le linee
-		;Disegno righe orizzontali
-		mov AH,02h
-		mov DX,word ptr startCol
-		int 10h		;cursore alto-sx
-		IFDEF VERBOSE
-			call DEBUG_CUR_P
-		ENDIF
-
-		;stampa riga in alto
-		mov AX,0E2Fh
-		int 10h		;stampa angolo alto-sx
-		xor CH,CH	;stampa bordo alto, no angolo alto-dx
-		mov CL,lastCol
-		sub CL,startCol
-		dec CL
-		push CX		;lo stesso # di trattini ci serve per il bordo basso
-		mov AL,'-'
-		;non posso usare REP con INT, non funziona.
-		;l'indirizzo di ritorno
-		;repnz int 10h
-		;non uso teletype. con finestre al limite (usuali) si ottiene
-		;uno scroll non voluto
-		mov AH,0Ah
-		int 10h		;stampa CX volte AL- non muove il cursore
-		mov AH,02h	;stampa angolo alto-dx
-		mov DH,startRow
-		mov DL,lastCol
-		int 10h
-		mov AH,0Eh
-		mov AL,'\'	
-		int 10h
-
-		;stampa teletype per la riga in basso, prima muovo il cursore
-		mov AH,02h
-		mov DH,lastRow
-		mov DL,startCol
-		int 10h		;cursore basso-sx
-		IFDEF VERBOSE
-			call DEBUG_CUR_P
-		ENDIF
-		mov AX,0E5Ch	;stampa angolo basso-sx
-		int 10h
-		pop CX		;carico il numero di trattini calcolato prima
-		mov AL,'-'
-		mov AH,0Ah
-		int 10h
-		mov AH,02h
-		mov DX,word ptr lastCol
-		int 10h
-		mov AL,'/'	;stampa angolo basso-dx
-		mov AH,0Ah
-		int 10h
-
-		;Disegno righe verticali prima SX poi DX
+		
+		;Faccio puntare l'extra segment alla memoria video.
+		mov BX,kSegVideo
+		mov ES,BX
+		
+		;spostamento all'origine del box
+		;evito la moltiplicazione per 80 facendo somme di shift
+		xor BH,BH
+		mov BL,DH	;numero di righe in BX
+		mov CL,04h
+		shl BX,CL	;righe*16 in BX
+		mov CX,BX	
+		shl CX,1	
+		shl CX,1	;righe*64 in CX
+		add BX,CX	;righe*80 in BX
+		
+		xor DH,DH
+		mov SI,DX	;LEA vuole base registers. Uso SI per la colonna
+		lea DI,[SI][BX] ;in DI l'indirizzo di origine.
+		shl DI,1	;DUE byte, uno per carattere, uno per attributi
+		mov rowPointer,DI
+		;stampa angolo alto-sx
+		;mov ES:[DI],byte ptr '/'
+		;inc DI ;inc DI ;ciclo stampa bordo superiore
+		cld		;I caratteri si trovano per indirizzi crescenti
+		mov AL,'/'
+		mov AH,07h	;attributo default bianco su nero
+		stosw
 		xor CH,CH
-		mov CL,lastRow 
-		sub CL,startRow
+		mov CL,frameW
 		dec CX
-		push CX		;ci servirà dopo - conteggio tratti verticali
+		dec CX	;in CX numero di trattini bordo superiore
+		;push CX	;salvo. è lo stesso numero di trattini del bordo inferiore
+		mov internW, CX
+		mov AL,'-'
+		repnz stosw
+		;stampa angolo alto-dx
+		mov AL,'\'
+		stosw
+		;salto alla riga successiva, partendo dall'angolo in alto-sx
+		mov BX,rowPointer
+		xor CH,CH
+		mov CL,frameH
+		dec CX
+		dec CX
+		mov DX,internW
+		shl DX,1	;DX=distanza bordo sx-dx
 		mov AL,'|'
-		mov DX,word ptr startCol
-		left:
-			inc DH
-			mov AH,02h
-			int 10h
-			IFDEF VERBOSE
-				call DEBUG_CUR_P
-			ENDIF
-			mov AH,0Eh
-			int 10h
-			dec CX	
-		jnz left
-		pop CX		;la riga DX è lunga come la SX
-		mov DH,startRow
-		mov DL,lastCol
-		right:
-			inc DH
-			mov AH,02h
-			int 10h
-			IFDEF VERBOSE
-				call DEBUG_CUR_P
-			ENDIF
-			mov AH,0Eh
-			int 10h
+		lblDraw:
+			add BX,scrCols*2
+			lea DI,[BX]
+			stosw
+			add DI,DX
+			stosw
 			dec CX
-		jnz right
+		ja lblDraw
+		;disegno angolo basso-sx, riga inferiore e angolo basso-dx
+		add BX,scrCols*2
+		lea DI,[BX]
+		mov AL,'\'
+		stosw
+		mov CX,internW
+		mov AL,'-'
+		repnz stosw
+		mov AL,'/'
+		stosw
 
-		;disegno completato, da qui in poi codici di uscita
-		;ripristino la posizione precedente del cursore
-		mov AH,02h
-		mov BH,kPage
-		pop DX
-		int 10h
-		IFDEF VERBOSE
-			call DEBUG_CUR_P
-		ENDIF
+		;pop CX
 		jmp lblExitOk
 		
 		lblTooLarge LABEL near
@@ -320,5 +293,4 @@ CODE_S segment para 'code'
 	ENDIF	
 CODE_S ends
 
-;fine assemblaggio, dichiaro l'entry point
 end MAIN_P
