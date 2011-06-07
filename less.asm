@@ -2,7 +2,7 @@
 ; David Costa
 
 STACK_S segment stack
-	DB 256 dup('STACK+-~') ;Ogni ripetizione occupa 8 byte (4 word)
+	DB 256 dup('STACK:-)') ;Ogni ripetizione occupa 8 byte (4 word)
 STACK_S ends
 
 DATA_S segment 'data'
@@ -29,16 +29,22 @@ DATA_S segment 'data'
 		msgTooLarge DB 'Box richiesto troppo largo.$'
 		msgTooLong DB 'Box richiesto troppo lungo.$'
 		msgChgMode DB 'Modo video cambiato in ',videoMode+'0','h.$'
-		msgMoveCur DB 'Muovo il cursore in (riga, colonna) ('
+		msgMoveCur DB 'Muovo il cursore in (riga,colonna) ('
 		curRow	DB ?,','
 		curCol  DB ?,')$'
 		msgFramepExit DB 'Esco da FRAME_P. con stato '
 		exitStatus    DB ? , '$'
+		msgCallFrameP DB 'Chiamo FRAME_P da (riga,colonna) ('
+		callDH DB ?,','
+		callDL DB ?,') e dimensioni ('
+		callAH DB ?,','
+		callAL DB ?,')$'
 	ENDIF
 DATA_S ends
 
 ;Direttiva sul processore. La CPU di default (8086) non implementa
-;alcune istruzioni tra cui PUSHA e POPA
+;alcune istruzioni tra cui PUSHA e POPA. L'80186 ancora non implementa
+;i salti condizionati e near.
 .186
 
 CODE_S segment para 'code'
@@ -57,7 +63,7 @@ CODE_S segment para 'code'
 		mov oldMode,AL
 		
 		;Imposto l'80x25
-		;TODO: modo 02h e 03h cosa cambia in VGA?
+		;02h->16 grigio, 03h->colori
 		mov AX,0003h
 		int 10h
 		IFDEF VERBOSE
@@ -67,9 +73,28 @@ CODE_S segment para 'code'
 		ENDIF		
 
 		;Chiamata di test a FRAME_P
-		mov AX,1950h
-		mov DX,0000h
+		;mov AX,1950h
+		;mov DX,0000h
+		mov DX,0305h
+		mov AX,0506h
+		IFDEF VERBOSE
+			mov callAH,AH
+			mov callAL,AL
+			mov callDH,DH
+			mov callDL,DL
+			add callAH,'0'
+			add callAL,'0'
+			add callDH,'0'
+			add callDL,'0'
+			mov SI, offset msgCallFrameP
+			call DEBUG_P
+		ENDIF
 		call FRAME_P
+		;Giusto un test - scrivo nella RAM video
+		;mov AX,0B800h
+		;mov ES,AX
+		;mov DI,0001h
+		;mov ES:[di],byte ptr 'F'
 
 		;Ripristino il modo video precedente
 ;		mov AH,00h	;Video-mode set
@@ -130,8 +155,7 @@ CODE_S segment para 'code'
 			call DEBUG_CUR_P
 		ENDIF
 
-		;stampa teletype per la riga in alto
-		;mov AH,0Eh ;mov AL,'/'
+		;stampa riga in alto
 		mov AX,0E2Fh
 		int 10h		;stampa angolo alto-sx
 		xor CH,CH	;stampa bordo alto, no angolo alto-dx
@@ -141,14 +165,20 @@ CODE_S segment para 'code'
 		push CX		;lo stesso # di trattini ci serve per il bordo basso
 		mov AL,'-'
 		;non posso usare REP con INT, non funziona.
+		;l'indirizzo di ritorno
 		;repnz int 10h
-		;TODO: verifica quando il conteggio è già zero!
-		upper:
-			int 10h	
-			dec CX
-		jnz upper
-		mov AL,'\'	;stampa angolo alto-dx
+		;non uso teletype. con finestre al limite (usuali) si ottiene
+		;uno scroll non voluto
+		mov AH,0Ah
+		int 10h		;stampa CX volte AL- non muove il cursore
+		mov AH,02h	;stampa angolo alto-dx
+		mov DH,startRow
+		mov DL,lastCol
 		int 10h
+		mov AH,0Eh
+		mov AL,'\'	
+		int 10h
+
 		;stampa teletype per la riga in basso, prima muovo il cursore
 		mov AH,02h
 		mov DH,lastRow
@@ -161,12 +191,15 @@ CODE_S segment para 'code'
 		int 10h
 		pop CX		;carico il numero di trattini calcolato prima
 		mov AL,'-'
-		lower:
-			int 10h
-			dec CX
-		jnz lower
-		mov AL,'/'	;stampa angolo basso-dx
+		mov AH,0Ah
 		int 10h
+		mov AH,02h
+		mov DX,word ptr lastCol
+		int 10h
+		mov AL,'/'	;stampa angolo basso-dx
+		mov AH,0Ah
+		int 10h
+
 		;Disegno righe verticali prima SX poi DX
 		xor CH,CH
 		mov CL,lastRow 
