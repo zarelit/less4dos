@@ -29,6 +29,9 @@ DATA_S segment 'data'
 		msgTooLarge DB 'Box richiesto troppo largo.$'
 		msgTooLong DB 'Box richiesto troppo lungo.$'
 		msgChgMode DB 'Modo video cambiato in ',videoMode+'0','h.$'
+		msgMoveCur DB 'Muovo il cursore in (riga, colonna) ('
+		curRow	DB ?,','
+		curCol  DB ?,')$'
 		msgFramepExit DB 'Esco da FRAME_P. con stato '
 		exitStatus    DB ? , '$'
 	ENDIF
@@ -64,8 +67,8 @@ CODE_S segment para 'code'
 		ENDIF		
 
 		;Chiamata di test a FRAME_P
-		xor AX,AX
-		mov DX,0108h
+		mov AX,0406h
+		mov DX,0201h
 		call FRAME_P
 
 		;Ripristino il modo video precedente
@@ -92,17 +95,18 @@ CODE_S segment para 'code'
 		;controllo se la dimensione rientra nello schermo
 		mov BX,DX
 		add BH,AH
-		add BL,AL
-		
-		cmp BH,scrRows-1 ;colonne e righe numerate da 0
+		add BL,AL	;calcolo la posizione dell'ultimo punto
+		dec BL		;decremento in quanto la dimensione è
+		dec BH		;comprensiva dell'ultima riga/colonna
+
+		cmp BH,scrRows-1 ;confronto con il bordo schermo
 		ja lblTooLong
 		cmp BL,scrCols-1
 		ja lblTooLarge
 
-		;salvo la posizione dei bordi
-		;possibile unire le due righe successive
-		mov lastRow,BH	;ultima riga
-		mov lastCol,BL	;ultima colonna
+		;salvo la posizione dell'ultimo punto
+		;mov lastRow,BH	;ultima riga ;mov lastCol,BL	;ultima colonna
+		mov word ptr lastCol,BX ;punto basso-dx
 
 		;salvo la posizione attuale del cursore
 		mov AH, 03h
@@ -113,24 +117,60 @@ CODE_S segment para 'code'
 		;disegno della cornice
 		; "/" o "\" per gli angoli, "|" o "-" per le linee
 		mov AH,02h
-		mov DX,word ptr startRow
+		mov DX,word ptr startCol
 		int 10h		;cursore alto-sx
+		IFDEF VERBOSE
+			call DEBUG_CUR_P
+		ENDIF
+
+		;stampa teletype per la riga in alto
 		;mov AH,0Eh ;mov AL,'/'
 		mov AX,0E2Fh
 		int 10h		;stampa angolo alto-sx
-		xor CH,CH	;stampa bordo alto
+		xor CH,CH	;stampa bordo alto, no angolo alto-dx
 		mov CL,lastCol
 		sub CL,startCol
 		dec CL
-		dec CL
+		push CX		;lo stesso # di trattini ci serve per il bordo basso
 		mov AL,'-'
-		rep int 10h
-		
+		;non posso usare REP con INT, non funziona.
+		;repnz int 10h
+		;TODO: verifica quando il conteggio è già zero!
+		upper:
+			int 10h	
+			dec CX
+		jnz upper
+		mov AL,'\'	;stampa angolo alto-dx
+		int 10h
+		;stampa teletype per la riga in basso, prima muovo il cursore
+		mov AX,02h
+		mov DH,lastRow
+		mov DL,startCol
+		int 10h		;cursore basso-sx
+		IFDEF VERBOSE
+			call DEBUG_CUR_P
+		ENDIF
+		mov AX,0E5Ch	;stampa angolo basso-sx
+		int 10h
+		pop CX		;carico il numero di trattini calcolato prima
+		mov AL,'-'
+		lower:
+			int 10h
+			dec CX
+		jnz lower
+		mov AL,'/'	;stampa angolo basso-dx
+		int 10h
+
+
 		;disegno completato, da qui in poi codici di uscita
 		;ripristino la posizione precedente del cursore
 		mov AH,02h
 		mov BH,kPage
 		pop DX
+		int 10h
+		IFDEF VERBOSE
+			call DEBUG_CUR_P
+		ENDIF
 		jmp lblExitOk
 		
 		lblTooLarge:
@@ -189,6 +229,15 @@ CODE_S segment para 'code'
 		popa
 		ret
 	DEBUG_P endp
+
+	DEBUG_CUR_P proc near
+		mov SI, offset msgMoveCur
+		mov curRow,DH
+		mov curCol,DL
+		add curCol,'0'
+		add curRow,'0'
+		call DEBUG_P
+	DEBUG_CUR_P endp
 	ENDIF	
 CODE_S ends
 
