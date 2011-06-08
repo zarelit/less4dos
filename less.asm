@@ -301,6 +301,7 @@ CODE_S segment para 'code'
 	;il corpo di FRAME_P
 	TEXT_P proc near
 		;INIZIALIZZO CALCOLANDO GLI INDIRIZZI DI INIZIO E FINE.
+		push SI ;viene modificato dal calcolo dell'inizio del box
 
 		;<<< copy/paste from frame_p >>>
 		;Memorizzo le dimensioni del box
@@ -345,7 +346,8 @@ CODE_S segment para 'code'
 		mov rowPointer,DI
 		mov boxStart, DI
 		;<<< end of copy/paste from FRAME_P >>>
-
+		pop SI
+		
 		;calcolo l'indirizzo di memoria dell'ultimo punto
 		mov frameH, AH	
 		mov frameW, AL ;Salvo le dimensioni del box
