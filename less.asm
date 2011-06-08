@@ -28,7 +28,7 @@ DATA_S segment 'data'
 		DB " degli schermi statunitensi[1].",0Dh,0Ah,"Il suo film di maggior successo fu Smilin' Through"
 		DB " (1922)[2], ma ottenne autentici trionfi, insieme al regista Frank Borzage, con Secrets (1924) "
 		DB "e The Lady (1925). Anche le sue sorelle minori Constance e Natalie furono delle stelle del cinema."
-		DB " Sposo' il miliardario produttore Joseph Schenck con il quale in seguito fondò con successo una"
+		DB " Sposo' il miliardario produttore Joseph Schenck con il quale in seguito fondo' con successo una"
 		DB " compagnia di produzione. Dopo aver raggiunto la fama grazie ai film girati sulla costa "
 		DB "occidentale, nel 1922 si trasferi' a Hollywood.",0
 	testTextShort DB 'Un testo inutile',0
@@ -138,21 +138,17 @@ CODE_S segment para 'code'
 			pop DX
 			pop AX
 		ENDIF
-		push AX
-		push DX
-		call FRAME_P
-		pop DX
-		pop AX
-		inc DH
-		inc DL
-		dec AH
-		dec AH
-		dec AL
-		dec AL
+
 		mov SI,offset testText
-		call TEXT_P
-
-
+		stc ;set carry = frame
+		call BOX_P
+		
+		mov DX,1800h
+		mov AX,0150h
+		mov SI,offset testTextShort
+		clc
+		call BOX_P
+		
 		;Ripristino il modo video precedente
 ;		mov AH,00h	;Video-mode set
 ;		mov AL,oldMode
@@ -211,8 +207,10 @@ CODE_S segment para 'code'
 		add BX,CX	;righe*80 in BX
 		
 		xor DH,DH
-		mov SI,DX	;LEA vuole base registers. Uso SI per la colonna
-		lea DI,[SI][BX] ;in DI l'indirizzo di origine.
+		;mov SI,DX	;LEA vuole base registers. Uso SI per la colonna
+		;lea DI,[SI][BX] ;in DI l'indirizzo di origine.
+		mov DI,DX
+		add DI,BX
 		shl DI,1	;DUE byte, uno per carattere, uno per attributi
 		mov rowPointer,DI
 		;stampa angolo alto-sx
@@ -301,7 +299,6 @@ CODE_S segment para 'code'
 	;il corpo di FRAME_P
 	TEXT_P proc near
 		;INIZIALIZZO CALCOLANDO GLI INDIRIZZI DI INIZIO E FINE.
-		push SI ;viene modificato dal calcolo dell'inizio del box
 
 		;<<< copy/paste from frame_p >>>
 		;Memorizzo le dimensioni del box
@@ -340,13 +337,13 @@ CODE_S segment para 'code'
 		shl CX,1	;righe*64 in CX
 		add BX,CX	;righe*80 in BX
 		xor DH,DH
-		mov SI,DX	;LEA vuole base registers. Uso SI per la colonna
-		lea DI,[SI][BX] ;in DI l'indirizzo di origine.
+		mov DI,DX	;LEA vuole base registers. Uso SI per la colonna
+		;lea DI,[DI][BX] ;in DI l'indirizzo di origine.
+		add DI,BX
 		shl DI,1	;DUE byte, uno per carattere, uno per attributi
 		mov rowPointer,DI
 		mov boxStart, DI
 		;<<< end of copy/paste from FRAME_P >>>
-		pop SI
 		
 		;calcolo l'indirizzo di memoria dell'ultimo punto
 		mov frameH, AH	
@@ -466,6 +463,28 @@ CODE_S segment para 'code'
 		ENDIF
 		ret
 	TEXT_P endp
+
+	;BOX_P checks for the carry flag. carry set=frame. carry clear=no frame.
+	BOX_P proc near
+		jc lblFrameful
+		;frameless
+		call TEXT_P
+		ret
+		lblFrameful:
+		push AX
+		push DX
+		call FRAME_P
+		pop DX
+		pop AX
+		inc DH
+		inc DL
+		dec AH
+		dec AH
+		dec AL
+		dec AL
+		call TEXT_P
+		ret
+	BOX_P endp
 
 	IFDEF VERBOSE
 	;in AL il byte da convertire, in AX i due ASCII corrispondenti
