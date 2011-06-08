@@ -10,6 +10,7 @@ DATA_S segment 'data'
 	videoMode EQU 03h	;modo video 80x25
 	scrCols	EQU 80		;|coerente con videoMode
 	scrRows EQU 25		;|coerente con videoMode
+	scrWidth EQU scrCols*2
 	kPage	EQU 00h		;pagina di testo di default
 	kSegVideo EQU 0B800h	;segmento video. Lo 0 davanti al numero è necessario a MASM
 	;Valori di uscita da FRAME_P 
@@ -19,14 +20,28 @@ DATA_S segment 'data'
 
 	;variabili globali e di MAIN_P
 	oldMode	DB ?	;Modo video prima dell'ingresso nel programma
-	testText DB 'Una interessante stringa che non va a capo',0h
+	;testText DB 'Una interessante stringa che non va a capo',0h
+	testText DB "Norma Talmadge (Jersey City, 26 maggio 1893 - Las Vegas, 24 dicembre 1957) e' stata un'attrice"
+		DB " e produttrice cinematografica statunitense dell'epoca del muto.",0Dh,0Ah
+		DB "La Talmadge fu regina degli incassi al botteghino per piu' di un decennio e la sua carriera "
+		DB "raggiunse il culmine all'inizio degli anni venti, quando entro' nella lista dei divi piu' popolari"
+		DB " degli schermi statunitensi[1].",0Dh,0Ah,"Il suo film di maggior successo fu Smilin' Through"
+		DB " (1922)[2], ma ottenne autentici trionfi, insieme al regista Frank Borzage, con Secrets (1924) "
+		DB "e The Lady (1925). Anche le sue sorelle minori Constance e Natalie furono delle stelle del cinema."
+		DB " Sposo' il miliardario produttore Joseph Schenck con il quale in seguito fondò con successo una"
+		DB " compagnia di produzione. Dopo aver raggiunto la fama grazie ai film girati sulla costa "
+		DB "occidentale, nel 1922 si trasferi' a Hollywood.",0
+	testTextShort DB 'Un testo inutile',0
 
-	;variabili usate da FRAME_P
+	;variabili usate da FRAME_P e TEXT_P
 	frameW DB ?	;Larghezza
 	frameH DB ?	;Altezza
 	internW DW ?	;numero trattini orizzontali
 	internH DW ?	;numero trattini verticali
 	rowPointer DW ?	;indirizzo inizio riga corrente
+	rowEnd	DW ?	;indirizzo fine riga corrente
+	boxEnd	DW ?	;indirizzo dell'ultimo carattere del box
+	boxStart DW ?
 	
 	;stringhe e variabili di debug.
 	IFDEF VERBOSE
@@ -93,14 +108,17 @@ CODE_S segment para 'code'
 
 		;Chiamata di test a FRAME_P
 		;Fullscreen
-		mov AX,1950h
-		mov DX,0000h
+		;mov AX,1950h
+		;mov DX,0000h
 		;Esempio
 		;mov DX,0305h
 		;mov AX,0506h
 		;Esempio sul bloc notes
 		;mov AX,0406h
 		;mov DX,0201h
+		;Esempio più grande
+		mov DX,0305h
+		mov AX,1012h
 		IFDEF VERBOSE
 			push AX
 			push DX
@@ -120,7 +138,20 @@ CODE_S segment para 'code'
 			pop DX
 			pop AX
 		ENDIF
+		push AX
+		push DX
 		call FRAME_P
+		pop DX
+		pop AX
+		inc DH
+		inc DL
+		dec AH
+		dec AH
+		dec AL
+		dec AL
+		mov SI,offset testText
+		call TEXT_P
+
 
 		;Ripristino il modo video precedente
 ;		mov AH,00h	;Video-mode set
@@ -269,8 +300,169 @@ CODE_S segment para 'code'
 	;uso le stesse variabili di FRAME_P, TEXT_P non è mai chiamata da dentro
 	;il corpo di FRAME_P
 	TEXT_P proc near
+		;INIZIALIZZO CALCOLANDO GLI INDIRIZZI DI INIZIO E FINE.
+
+		;<<< copy/paste from frame_p >>>
+		;Memorizzo le dimensioni del box
 		mov word ptr frameW,AX
+
+		;controllo se la dimensione rientra nello schermo
+		mov BX,DX
+		add BH,AH
+		add BL,AL	;calcolo la posizione dell'ultimo punto
+		dec BL		;decremento in quanto la dimensione è
+		dec BH		;comprensiva dell'ultima riga/colonna
+
+		cmp BH,scrRows-1 ;confronto con il bordo schermo
+		ja toLongErrorTextP
+		cmp BL,scrCols-1
+		ja toLargeErrorTextP
+		jmp toNormalPathTextP
+		toLongErrorTextP:
+			jmp lblTooLong
+		toLargeErrorTextP:
+			jmp lblTooLarge
+		toNormalPathTextP:
+
+		;Faccio puntare l'extra segment alla memoria video.
+		mov BX,kSegVideo
+		mov ES,BX
 		
+		;spostamento all'origine del box
+		;evito la moltiplicazione per 80 facendo somme di shift
+		xor BH,BH
+		mov BL,DH	;numero di righe in BX
+		mov CL,04h
+		shl BX,CL	;righe*16 in BX
+		mov CX,BX	
+		shl CX,1	
+		shl CX,1	;righe*64 in CX
+		add BX,CX	;righe*80 in BX
+		xor DH,DH
+		mov SI,DX	;LEA vuole base registers. Uso SI per la colonna
+		lea DI,[SI][BX] ;in DI l'indirizzo di origine.
+		shl DI,1	;DUE byte, uno per carattere, uno per attributi
+		mov rowPointer,DI
+		mov boxStart, DI
+		;<<< end of copy/paste from FRAME_P >>>
+
+		;calcolo l'indirizzo di memoria dell'ultimo punto
+		mov frameH, AH	
+		mov frameW, AL ;Salvo le dimensioni del box
+		xor BH,BH	
+		mov BL,AH
+		dec BX		;righe numerate da 0. Un box con H=1 ha la riga di fine coincidente con l'inizio
+		mov CL,04h
+		shl BX,CL
+		mov CX,BX
+		shl CX,1
+		shl CX,1
+		add BX,CX   ;numero di righe del box * 80
+		xor AH,AH
+		dec AL	    ;un box composto da una sola colonna fa spostare l'indirizzo di 0 volte
+		add BX,AX   ;BX=numero di caratteri che compongono il box
+		shl BX,1    ;BX=numero di byte che compongono il box
+		add DI,BX   ;DI=indirizzo di memoria dell'ultimo punto
+		mov boxEnd, DI
+		
+		;Ciclo di riempimento del box
+		;Controllo se sono in una posizione valida con il "cursore".
+		;-Se no aggiusto la posizione
+		;-Se si passo al punto successivo
+		;Carico un carattere dalla stringa.
+		;Se è stampabile lo stampo e avanzo
+		;Se è un carattere di movimento (CR,LF,BS) muovo il cursore
+		;Se è il terminatore esco
+		;Se è un altro carattere lo ignoro.
+		
+		;frameW e frameH vengono ora decrementati di uno per gestire meglio gli spostamenti
+		;e saranno espressi in BYTE.
+		mov AH,frameH
+		dec AH
+		shl AH,1
+		mov AL,frameW
+		dec AL
+		shl AL,1
+		mov frameH,AH
+		mov frameW,AL
+		
+		mov DI,boxStart	;spostamento all'inizio del box
+		cld		;stringa per indirizzi crescenti
+
+		mov CX,rowPointer
+		add CL,frameW
+		adc CH,0
+		mov rowEnd,CX
+
+		charLoop:
+			;controllo posizione
+			mov DX,boxEnd
+			cmp DI,boxEnd ;abbiamo oltrepassato la fine del box?
+			ja endPrint
+			mov CX,rowEnd
+			cmp DI,rowEnd ;se oltrepassiamo il bordo del box: CR+LF
+			ja newRow
+			
+			lodsb	      ;carico un carattere della stringa
+			cmp AL,00h    ;abbiamo raggiunto la fine della stringa?
+			je  endPrint
+			cmp AL,0Dh    ;Carriage return?
+			je CRHandle
+			cmp AL,0Ah    ;Line feed?
+			je LFHandle
+			
+			mov AH,07h    ;attributo del carattere stampato
+			stosw	      ;stampo il carattere
+
+		jmp charLoop
+
+		newRow:
+			mov DI,rowPointer
+			add DI,scrWidth ;CR+LF
+			add rowPointer,scrWidth ;nuova riga
+			add rowEnd,scrWidth     ;e nuovo fine riga
+		jmp charLoop
+		CRHandle:
+			mov DI,rowPointer	;CR ritorna all'inizio della riga
+		jmp charLoop
+
+		LFHandle:
+			add DI,scrWidth		;LF si sposta verticalmente di una riga
+		jmp charLoop
+
+		endPrint: 	;fine della stampa
+
+		;<<< copy/pasted from FRAME_P >>>
+		jmp lblExitOkTextP
+		
+		lblTooLargeTextP LABEL near
+		IFDEF VERBOSE
+			mov SI,offset msgTooLarge
+			call DEBUG_P
+		ENDIF
+		mov AH, kErrLarge
+		jmp lblExit
+		lblTooLongTextP LABEL near
+		IFDEF VERBOSE
+			mov SI,offset msgTooLong
+			call DEBUG_P
+		ENDIF
+		mov AH,kErrLong
+		jmp lblExitTextP
+
+		lblExitOkTextP:
+		mov AH,kOk
+		lblExitTextP:
+		IFDEF VERBOSE
+			push AX
+			mov SI,offset msgFramepExit
+			mov AL,AH
+			call HEX2ASCII
+			mov exitStatus,AX
+			call DEBUG_P
+			pop AX
+		ENDIF
+		ret
 	TEXT_P endp
 
 	IFDEF VERBOSE
@@ -288,6 +480,19 @@ CODE_S segment para 'code'
 		shr BL,CL
 		add BL,'0'
 		mov AL,BL ;in AL l'ASCII della cifra più significativa
+		;i numeri 0-9 a le lettere A-F non sono contigue in ASCII
+		cmp AH,'9'
+		ja nonNumeralAH
+		checkNumeralAL:
+		cmp AL,'9'
+		ja nonNumeralAL
+		jmp quitHex2Ascii
+		nonNumeralAH:
+			add AH,07h
+			jmp checkNumeralAL
+		nonNumeralAL:
+			add AL,07h
+		quitHex2Ascii:
 		pop CX
 		pop BX
 		ret
