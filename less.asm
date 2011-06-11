@@ -47,7 +47,8 @@ DATA_S segment 'data'
 	;buffer dati del file da leggere e puntatori
 	inputFilename DB 'sonetti_.txt', 00h
 	inputFileHandle DW ?
-	kBufferSize EQU 1024 ;bytes
+	kBufferSize EQU 4096 ;bytes. Lo schermo 80x25 ne contiene 2000.
+	startPointer DW [textBuffer]
 	textBuffer DB kBufferSize dup(?), 00h ;buffer dati da 1KiB, _terminato_
 	
 	;stringhe e variabili di debug.
@@ -76,6 +77,10 @@ DATA_S segment 'data'
 		       DB ')$'
 		logFileName DB 'lesslog.txt',0
 		logHandle DW ?
+		msgScanCode DB 'Premuto il tasto con scancode '
+		pressedScancode DW ?
+				DB '$'
+
 	ENDIF
 DATA_S ends
 
@@ -116,13 +121,12 @@ CODE_S segment para 'code'
 		;Apro il file di input 
 		call OPENFILE_P
 
-		;Disegna la prima pagina del file aperto
-		mov AH,scrRows-1
-		mov AL,scrCols
-		mov DX,0000h
-		mov SI,offset textBuffer
-		stc
-		call BOX_P
+		;Leggo il contenuto del file e riempio il buffer.
+		mov AH,3Fh
+		mov BX,inputFileHandle
+		mov CX,kBufferSize
+		mov DX,offset textBuffer
+		int 21h
 		
 		;Disegna breve guida
 		mov DX,1800h
@@ -133,11 +137,24 @@ CODE_S segment para 'code'
 		
 		;Programma inizializzato, ciclo eventi
 		lblEventLoop:
+			;Disegno la pagina
+			mov AH,scrRows-1
+			mov AL,scrCols
+			mov DX,0000h
+			;mov SI,offset textBuffer
+			mov SI,[startPointer]
+			stc
+			call BOX_P
+
 			;Attendo un'azione dall'utente
 			call USER_P
 		jmp lblEventLoop
 
 		lblQuitProgram:
+
+		;Chiudo il file di input
+		call CLOSEFILE_P
+
 		;Ripristino il modo video precedente
 		mov AH,00h	;Video-mode set
 		mov AL,oldMode
@@ -145,7 +162,9 @@ CODE_S segment para 'code'
 
 		;Esco correttamente al dos
 		IFDEF VERBOSE
+			push SI
 			call DEBUG_END_P
+			pop SI
 		ENDIF
 		;AH=4C, AL=valore ritorno
 		mov AX, 4C00h
@@ -158,24 +177,77 @@ CODE_S segment para 'code'
 		push AX
 		mov AH,00h
 		int 16h	;attendo la pressione di un tasto
+		IFDEF VERBOSE
+			push SI
+			push AX
+			xchg AL,AH
+			call HEX2ASCII
+			mov pressedScancode,AX
+			mov SI,offset msgScancode
+			call DEBUG_P
+			pop AX
+			pop SI
+		ENDIF
 		cmp AL,'Q'
 		je quitChoice
 		cmp AL,'q'
-		je quitChoice
-		pop AX
-		ret
+		je quitChoice  ;Tasti di uscita
+		cmp AH,50h
+		je scrollDown	;Freccia giù
+		jmp quitUserP
+		
 		;da qui in poi routine delle scelte
 		quitchoice:	
-		jmp lblQuitProgram
+			jmp lblQuitProgram
+		scrollDown:
+			call SCROLLDOWN_P
+			jmp quitUserP
+		quitUserP:
+		pop AX
+		ret
 	USER_P endp	
+	
+	;SCROLLDOWN_P fa scorrere il testo di una riga verso la fine del file
+	SCROLLDOWN_P proc near
+		;cerco l'inizio della prossima riga
+		;ci si ferma incontrando LF oppure dopo scrCols caratteri
+		mov CX,scrCols
+		mov AL,0Ah
+		push ES ;scasb vuole la stringa in ES:DI, ma in ES abbiamo la memoria video
+		mov BX,DS
+		mov ES,BX ;ES=segmento buffer dati
+		mov DI,startPointer
+		cld
+		repnz scasb
+		mov startPointer,DI
+		pop ES
+		ret
+	SCROLLDOWN_P endp
 
 	;OPENFILE_P apre il file specificato (ora nelle variabili, hardcoded)
 	;in caso di errore, esce dal programma
 	OPENFILE_P proc near
-		mov AH,3Dh
-		mov 
+		;mov AH,3Dh ;open file
+		;mov AL,00h ;read only 
+		mov AX,3D00h
+		mov DX,offset inputFilename
 		int 21h
+		jc lblOpenFailed
+		mov inputFileHandle,AX
+		ret
+		lblOpenFailed:
+		jmp lblQuitProgram
 	OPENFILE_P endp
+	
+	;CLOSEFILE_P chiude il file di input
+	CLOSEFILE_P proc near
+		mov AH,3Eh
+		mov BX,inputFileHandle
+	 	int 21h
+		;anche se ci sono errori si uscirebbe dal programma.
+		;ma il programma è già in fase di uscita
+		ret
+	CLOSEFILE_P endp
 	
 	;FRAME_P disegna cornici.  
 	;Parametri:
@@ -278,15 +350,19 @@ CODE_S segment para 'code'
 		
 		lblTooLarge LABEL near
 		IFDEF VERBOSE
+			push SI
 			mov SI,offset msgTooLarge
 			call DEBUG_P
+			pop SI
 		ENDIF
 		mov AH, kErrLarge
 		jmp lblExit
 		lblTooLong LABEL near
 		IFDEF VERBOSE
+			push SI
 			mov SI,offset msgTooLong
 			call DEBUG_P
+			pop SI
 		ENDIF
 		mov AH,kErrLong
 		jmp lblExit
@@ -295,6 +371,7 @@ CODE_S segment para 'code'
 		mov AH,kOk
 		lblExit:
 		IFDEF VERBOSE
+			push SI
 			push AX
 			mov SI,offset msgFramepExit
 			mov AL,AH
@@ -302,6 +379,7 @@ CODE_S segment para 'code'
 			mov exitStatus,AX
 			call DEBUG_P
 			pop AX
+			pop SI
 		ENDIF
 		ret
 	FRAME_P endp
@@ -387,7 +465,7 @@ CODE_S segment para 'code'
 		;Se è un carattere di movimento (CR,LF,BS) muovo il cursore
 		;Se è il terminatore esco
 		;Se è un altro carattere lo ignoro.
-		
+				
 		;frameW e frameH vengono ora decrementati di uno per gestire meglio gli spostamenti
 		;e saranno espressi in BYTE.
 		mov AH,frameH
