@@ -13,6 +13,7 @@ DATA_S segment 'data'
 	scrWidth EQU scrCols*2
 	kPage	EQU 00h		;pagina di testo di default
 	kSegVideo EQU 0B800h	;segmento video. Lo 0 davanti al numero è necessario a MASM
+	
 	;Valori di uscita da FRAME_P 
 	kOk	  EQU 00h	;box disegnato
 	kErrLarge EQU 01h	;box troppo largo
@@ -31,7 +32,7 @@ DATA_S segment 'data'
 		DB " Sposo' il miliardario produttore Joseph Schenck con il quale in seguito fondo' con successo una"
 		DB " compagnia di produzione. Dopo aver raggiunto la fama grazie ai film girati sulla costa "
 		DB "occidentale, nel 1922 si trasferi' a Hollywood.",0
-	testTextShort DB 'Un testo inutile',0
+	txtShortGuide DB '(Q)uit',0
 
 	;variabili usate da FRAME_P e TEXT_P
 	frameW DB ?	;Larghezza
@@ -42,6 +43,12 @@ DATA_S segment 'data'
 	rowEnd	DW ?	;indirizzo fine riga corrente
 	boxEnd	DW ?	;indirizzo dell'ultimo carattere del box
 	boxStart DW ?
+
+	;buffer dati del file da leggere e puntatori
+	inputFilename DB 'sonetti_.txt', 00h
+	inputFileHandle DW ?
+	kBufferSize EQU 1024 ;bytes
+	textBuffer DB kBufferSize dup(?), 00h ;buffer dati da 1KiB, _terminato_
 	
 	;stringhe e variabili di debug.
 	IFDEF VERBOSE
@@ -106,53 +113,35 @@ CODE_S segment para 'code'
 			call DEBUG_P
 		ENDIF		
 
-		;Chiamata di test a FRAME_P
-		;Fullscreen
-		;mov AX,1950h
-		;mov DX,0000h
-		;Esempio
-		;mov DX,0305h
-		;mov AX,0506h
-		;Esempio sul bloc notes
-		;mov AX,0406h
-		;mov DX,0201h
-		;Esempio più grande
-		mov DX,0305h
-		mov AX,1012h
-		IFDEF VERBOSE
-			push AX
-			push DX
-			call HEX2ASCII ;converto AL
-			mov callAL,AX
-			mov AL,AH
-			call HEX2ASCII
-			mov callAH,AX
-			mov AL,DH
-			call HEX2ASCII
-			mov callDH,AX
-			mov AL,DL
-			call HEX2ASCII
-			mov callDL,AX
-			mov SI, offset msgCallFrameP
-			call DEBUG_P
-			pop DX
-			pop AX
-		ENDIF
+		;Apro il file di input 
+		call OPENFILE_P
 
-		mov SI,offset testText
-		stc ;set carry = frame
+		;Disegna la prima pagina del file aperto
+		mov AH,scrRows-1
+		mov AL,scrCols
+		mov DX,0000h
+		mov SI,offset textBuffer
+		stc
 		call BOX_P
 		
+		;Disegna breve guida
 		mov DX,1800h
 		mov AX,0150h
-		mov SI,offset testTextShort
+		mov SI,offset txtShortGuide
 		clc
 		call BOX_P
 		
+		;Programma inizializzato, ciclo eventi
+		lblEventLoop:
+			;Attendo un'azione dall'utente
+			call USER_P
+		jmp lblEventLoop
+
+		lblQuitProgram:
 		;Ripristino il modo video precedente
-;		mov AH,00h	;Video-mode set
-;		mov AL,oldMode
-;		int 10h
+		mov AH,00h	;Video-mode set
+		mov AL,oldMode
+		int 10h
 
 		;Esco correttamente al dos
 		IFDEF VERBOSE
@@ -162,6 +151,31 @@ CODE_S segment para 'code'
 		mov AX, 4C00h
 		int 21h
 	MAIN_P endp
+	
+	;USER_P attende la pressione di un tasto e chiama le routine corrispondenti
+	;all'azione scelta.
+	USER_P proc near
+		push AX
+		mov AH,00h
+		int 16h	;attendo la pressione di un tasto
+		cmp AL,'Q'
+		je quitChoice
+		cmp AL,'q'
+		je quitChoice
+		pop AX
+		ret
+		;da qui in poi routine delle scelte
+		quitchoice:	
+		jmp lblQuitProgram
+	USER_P endp	
+
+	;OPENFILE_P apre il file specificato (ora nelle variabili, hardcoded)
+	;in caso di errore, esce dal programma
+	OPENFILE_P proc near
+		mov AH,3Dh
+		mov 
+		int 21h
+	OPENFILE_P endp
 	
 	;FRAME_P disegna cornici.  
 	;Parametri:
