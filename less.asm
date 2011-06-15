@@ -74,13 +74,25 @@ DATA_S segment 'data'
 		callAH DW ? 
 		       DB ','
 		callAL DW ?
-		       DB ')$'
+		       DB ') Frame='
+		frameReq DW ?
+			DB  '$'
 		logFileName DB 'lesslog.txt',0
 		logHandle DW ?
 		msgScanCode DB 'Premuto il tasto con scancode '
 		pressedScancode DW ?
 				DB '$'
-
+		;messaggi debug NEWBOX_P
+		msgCallNewBox DB 'NEWBOX_P: Origine=('
+		newBoxOrigRow DW ?
+			    DB ','
+		newBoxOrigCol DW ?
+			    DB ') Dimensioni=('
+		newBoxSizeRow DW ?
+			DB ','
+		newBoxSizeCol DW ?
+			DB ') Bordo='
+		newBoxFrame DB ?, '$'
 	ENDIF
 DATA_S ends
 
@@ -577,6 +589,43 @@ CODE_S segment para 'code'
 		call TEXT_P
 		ret
 	BOX_P endp
+	
+	;NEWBOX_P disegna un box con frame (direction=1) o senza frame (direction=0)
+	;
+	;Origine del box: DH riga, DL colonna
+	;Dimensione del box: AH righe, AL colonne
+	;
+	;Valori di uscita: carry flag settato se qualcosa non va.
+	NEWBOX_P proc near
+		;Se assemblato con VERBOSE per ogni chiamata stampiamo i parametri
+		IFDEF VERBOSE
+			push AX
+			call HEX2ASCII
+			mov newBoxSizeCol,AX
+				
+			pop AX
+		ENDIF
+		;controllo dimensionale del box. Deve essere contenuto nello schermo.
+		mov BX,DX
+		add BH,AH	;origine+dimensione verticale
+		add BL,AL	;origine+dimensione orizzontale
+		dec BL		;BL=ultima colonna da disegnare
+		dec BH		;BH=ultima riga da disegnare
+		cmp BH,scrRows-1
+		ja toLongError
+		cmp BL,scrCols-1
+		ja toLargeError
+		jmp toSizeOk
+		toLongError:
+			jmp lblTooLong
+		toLargeError:
+			jmp lblTooLarge
+		toSizeOk:
+		
+		lblTooLarge:
+		IFDEF VERBOSE
+		ENDIF
+	NEWBOX_P endp
 
 	IFDEF VERBOSE
 	;in AL il byte da convertire, in AX i due ASCII corrispondenti
@@ -611,41 +660,11 @@ CODE_S segment para 'code'
 		ret
 	HEX2ASCII endp
 	;stampa un messaggio di debug
-	;mettere in SI l'offset del messaggio
+	;mettere in DX l'offset del messaggio
 	DEBUG_P proc near
 		pusha ;mostrato come DB 60 dal debugger
-		;"Vecchia" debug function che stampava il messaggio in basso
-		;;dove era il cursore?
-		;mov AH,03h	;cursor query
-		;mov BH,kPage	;pagina di default
-		;int 10h
-		;push DX		;DX=posizione del cursore
-		;;messaggio sull'ultima riga come un messaggio di stato
-		;mov DH,scrRows-1
-		;mov DL,0
-		;mov AH,02h	;set cursor
-		;int 10h
-		;;pulisco la riga
-		;mov CX,scrCols
-		;;mov AH,0Ah ;mov AL,' '
-		;mov AX,0A20h 	;stampa CX volte l'ASCII in AL
-		;int 10h		;senza muovere il cursore
-
-		;;stampa messaggio
-		;mov DX,SI
-		;mov AH,09h ;stampa messaggio DOS
-		;int 21h
-		;;attendo un tasto.
-		;mov AH,00h	;key wait
-		;int 16h		;BIOS keyboard services
-		;;ritorno del cursore
-		;pop DX
-		;mov AH,02h
-		;int 10h
-
-		;"Nuova" debug function che stampa nel file di log
-		mov DX,SI ;la funzione di scrittura su file vuole i dati in DS:DX
-		mov DI,SI
+		pushf ;salvataggio dei flag quali la DIREZIONE
+		mov DI,DX
 		push DS
 		pop ES
 		mov CX,0FFFFh ;conteggio dei caratteri
@@ -662,6 +681,7 @@ CODE_S segment para 'code'
 		mov DX,offset newLine
 		mov AH,40h
 		int 21h
+		popf
 		popa
 		ret
 	DEBUG_P endp
