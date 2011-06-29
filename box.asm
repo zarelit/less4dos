@@ -64,15 +64,16 @@ BOX_P proc near
 	; Lavoriamo sempre con 80 colonne: somme di shift per moltipl. per 80
 	xor BH,BH
 	mov BL,DH ; BL=riga dell'origine
-	mov CL,04h
+	mov CX,0004h
 	shl BX,CL ; righe*16 in BX
+	mov CX,BX
 	shl CX,1
 	shl CX,1  ; righe*64 in CX
 	add BX,CX ; righe*80 in BX
-	shl BX,1  ; moltiplico per due: due byte per ogni carattere
 	mov DI,BX ; imposto la destinazione per le funzioni di stringa
 	xor DH,DH ; devo aggiungere il numero di colonne.
 	add DI,DX ; DI=vera origine del box
+	shl DI,1
 	mov boxMemOrig,DI
 	
 	; Pulisco l'area di disegno
