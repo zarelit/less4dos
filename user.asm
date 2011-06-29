@@ -5,12 +5,20 @@ CODE_S segment public 'code'
 
 ; QUIT_P esce dal programma con il valore di ritorno in exitCode
 QUIT_P proc near
-	;Ripristino video mode originale
+	;Ripristino video mode originale - se è stato salvato
+	;CMP mem, immediate può confrontare solo immediati fino a 127!!!
+	;cmp dosVideoMode,0Fh
+	;BUG del MASM o limite Intel? L'errore è una label che
+	;si sposta tra le due passate
+	mov BL,dosVideoMode
+	cmp BL,0FFh
+	je lblQuit
 	mov AH,00h
 	mov AL,dosVideoMode
 	int 10h
 
 	;Esco dal programma
+	lblQuit:
 	mov AH,4Ch
 	mov AL,exitCode
 	int 21h

@@ -259,7 +259,11 @@ BOX_P proc near
 
 	; Gestione degli errori incontrati durante il disegno
 	lblTooLarge:
+		mov exitCode,01h
+		stc
+	ret
 	lblTooLong:
+		mov exitCode,02h	
 		stc ;set carry - errore
 	ret
 BOX_P endp
