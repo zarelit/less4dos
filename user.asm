@@ -1,5 +1,15 @@
 ; Interazione con l'utente
 
+DATA_S segment public 'data'
+	; Messaggi di errore
+	msgCode00 DB 'Programma eseguito senza errori','$'
+	msgCode01 DB 'Richiesto disegno di un box troppo largo','$'
+	msgcode02 DB 'Richiesto disegno di un box troppo lungo','$'
+	msgCode03 DB 'Impossibile leggere il file dati','$'
+	msgCode04 DB 'Nessun file fornito sulla riga di comando','$'
+	msgCodeUnknow DB 'Riscontrato un errore non specificato','$'
+DATA_S ends
+
 CODE_S segment public 'code'
 	assume CS:CODE_S,DS:DATA_S,SS:STACK_S
 
@@ -7,7 +17,7 @@ CODE_S segment public 'code'
 QUIT_P proc near
 	;Ripristino video mode originale - se è stato salvato
 	;CMP mem, immediate può confrontare solo immediati fino a 127!!!
-	;cmp dosVideoMode,0Fh
+	;cmp dosVideoMode,0FFh
 	;BUG del MASM o limite Intel? L'errore è una label che
 	;si sposta tra le due passate
 	mov BL,dosVideoMode
@@ -17,9 +27,39 @@ QUIT_P proc near
 	mov AL,dosVideoMode
 	int 10h
 
-	;Esco dal programma
 	lblQuit:
-	mov AH,4Ch
+	;Stampo una stringa che motiva l'uscita
+	mov BL,exitCode
+	cmp BL,00h
+	;Salti relativi di 8 byte
+	;2 jne + 3 mov + 2 jmp + 1 nop
+	jne $+8
+		mov DX,offset msgCode00
+		jmp lblToDos
+	cmp BL,01h
+	jne $+8
+		mov DX,offset msgCode01
+		jmp lblToDos
+	cmp BL,02h
+	jne $+8
+		mov DX,offset msgCode02
+		jmp lblToDos
+	cmp BL,03h
+	jne $+8
+		mov DX,offset msgCode03
+		jmp lblToDos
+	cmp BL,04h
+	jne $+8
+		mov DX,offset msgCode04
+		jmp lblToDos
+	lblUknknownError:
+		mov DX,offset msgCodeUnknow
+	
+	;Esco dal programma
+	lblToDos:
+	mov AH,09h ;stampo l'errore
+	int 21h
+	mov AH,4Ch ;esco verso il DOS
 	mov AL,exitCode
 	int 21h
 QUIT_P endp

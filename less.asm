@@ -16,7 +16,7 @@ DATA_S segment public 'data'
 	dosVideoMode DB 0FFh	 ; modo video DOS
 	exitCode DB 0	;vedi Codici di uscita
 	fileName DB 256 dup(?) ; nome del file di testo da aprire
-	fileHandler DW 0000h ;handler restituito dal S.O.
+	fileHandle DW 0000h ;handler restituito dal S.O.
 DATA_S ends
 
 ; Main program
@@ -36,7 +36,7 @@ MAIN_P proc near
 	xor CH,CH
 	;cmp CX,0
 	test CX,CX ; se nessun parametro è stato passato: errore file
-	jz lblFileError
+	jz lblNoCmdLine
 	dec CX ; ignoro lo spazio all'inizio. Copio un char di meno
 	repnz movsb ; copio la stringa
 	mov AL,00h ; rendo ASCIIZ la stringa
@@ -52,6 +52,7 @@ MAIN_P proc near
 	mov DX,offset fileName
 	int 21h
 	jc lblFileError
+	mov fileHandle,AX
 	
 	; Salvo il modo video corrente
 	; (chiamata BIOS getVideoMode)
@@ -70,13 +71,29 @@ MAIN_P proc near
 	mov CX,2607h
 	int 10h
 
-	
+	; TEST: riempio con il file di testo il buffer
+	; e lo disegno
+	call BUFFER_FILL_P
+	mov DX,0000h
+	mov AH,25
+	mov AL,80
+	mov CL,01h
+	mov SI,offset textBuffer
+	call BOX_P
+
 	; Attesa risposta utente
 	userloop:
 	call USER_P
 	jmp userloop
 
+	lblNoCmdLine:
+		mov AX,seg DATA_S
+		mov DS,AX
+		mov exitCode,04h
+		call QUIT_P
 	lblFileError:
+		mov AX, seg DATA_S
+		mov DS,AX
 		mov exitCode,03h
 		call QUIT_P
 
@@ -92,3 +109,4 @@ end MAIN_P
 ; 1 - Box da disegnare troppo largo
 ; 2 - Box da disegnare troppo lungo
 ; 3 - Impossibile aprire il file specificato
+; 4 - Nessun file fornito sulla riga di comando.
