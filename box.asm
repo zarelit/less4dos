@@ -166,6 +166,9 @@ BOX_P proc near
 	dec AL
 	xor AH,AH
 	mov innerH,AX
+	;la routine di disegno vuole i seguenti parametri
+	mov AX,innerW
+	mov BX,innerH
 	jmp drawText
 
 	; senza frame le dimensioni interne sono uguali alle esterne
@@ -179,6 +182,7 @@ BOX_P proc near
 
 	; disegno del testo
 	drawText:
+
 	; calcolo l'ultimo indirizzo di memoria del box
 	dec BX ;un box con monoriga ha la fine e l'inizio sulla stessa riga!
 	mov CL,04h
@@ -197,6 +201,7 @@ BOX_P proc near
 
 	; calcolo l'indirizzo di fine della riga corrente
 	mov CX,innerW
+	dec CX
 	shl CX,1
 	add CX,boxMemOrig
 	mov rowEnd,CX

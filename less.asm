@@ -56,6 +56,12 @@ MAIN_P proc near
 	mov AX,0320h
 	mov CX,0001h
 	call BOX_P
+
+	mov SI,offset dummyText
+	mov DX,0101h
+	mov AX,0130h
+	mov CX,0000h
+	call BOX_P
 	
 	; Attesa risposta utente
 	userloop:
