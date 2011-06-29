@@ -90,7 +90,6 @@ BOX_P proc near
 		add rowPointer,kRowBytes
 		mov DI,rowPointer ; spostamento alla riga successiva
 		dec BX
-		cmp BX,0
 	ja lblClearBox
 	
 	popf
