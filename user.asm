@@ -5,11 +5,19 @@ CODE_S segment public 'code'
 
 ; QUIT_P esce dal programma con il valore di ritorno in exitCode
 QUIT_P proc near
+	;Ripristino video mode originale
+	mov AH,00h
+	mov AL,dosVideoMode
+	int 10h
+
+	;Esco dal programma
 	mov AH,4Ch
 	mov AL,exitCode
 	int 21h
 QUIT_P endp
 
+
+; USER_P attende un input dall'utente e agisce di conseguenza.
 USER_P proc near
 	push AX
 	mov AH,00h
