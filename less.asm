@@ -1,5 +1,6 @@
 ; Main file
 
+%out Entering less.asm
 ; Inclusione delle varie parti del codice
 include box.asm
 include user.asm
@@ -71,20 +72,23 @@ MAIN_P proc near
 	mov CX,2607h
 	int 10h
 
+	; Disegno il menu
+	call PRINT_MENU_P
+
 	; TEST: riempio con il file di testo il buffer
 	; e lo disegno
 	call BUFFER_FILL_P
-	mov DX,0000h
-	mov AH,25
-	mov AL,80
-	mov CL,01h
-	mov SI,offset textBuffer
-	call BOX_P
-
-	; Attesa risposta utente
-	userloop:
-	call USER_P
-	jmp userloop
+	lblEventLoop:
+		mov DX,0000h
+		mov AH,24
+		mov AL,80
+		mov viewPortW,78
+		mov CL,01h
+		mov SI,viewPort
+		call BOX_P
+		; Attesa risposta utente
+		call USER_P
+	jmp lblEventLoop
 
 	lblNoCmdLine:
 		mov AX,seg DATA_S

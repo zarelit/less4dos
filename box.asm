@@ -1,5 +1,6 @@
 ; Codice per disegnare box e riempirli con testo
 
+%out Entering box.asm
 ; Variabili delle funzioni contenute in questo file
 ; Le variabili locali non sono sullo stack in quanto
 ; non si necessita rientranza

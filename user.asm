@@ -1,5 +1,6 @@
 ; Interazione con l'utente
 
+%out Entering user.asm
 DATA_S segment public 'data'
 	; Messaggi di errore
 	msgCode00 DB 'Programma eseguito senza errori','$'
@@ -8,6 +9,10 @@ DATA_S segment public 'data'
 	msgCode03 DB 'Impossibile leggere il file dati','$'
 	msgCode04 DB 'Nessun file fornito sulla riga di comando','$'
 	msgCodeUnknow DB 'Riscontrato un errore non specificato','$'
+
+	; Menu
+	msgMenu DB '(Q)uit ',00h
+
 DATA_S ends
 
 CODE_S segment public 'code'
@@ -77,17 +82,34 @@ USER_P proc near
 	je quitChoice
 	cmp AL,'Q'
 	je quitChoice
+	;freccia giù, scroll down
+	cmp AH,50h
+	je scrDownChoice
 	;nessuna scelta, esco senza azioni
 	jmp quitUserP
 
 	quitChoice:
 		call QUIT_P
-	
-	jmp quitUserP
+	scrDownChoice:
+		call SCROLLDOWN_P
+		jmp quitUserP
 
 	quitUserP:
 	pop AX
 	ret
 USER_P endp
 
+; Stampa un "help" come se fosse una barra di stato
+PRINT_MENU_P proc near
+	;ultima riga - senza frame
+	mov AX,0150h
+	mov DX,1800h
+	mov SI,offset msgMenu
+	mov CL,00h
+	call BOX_P
+	jc errMenu
+	ret
+	errMenu:
+	call QUIT_P
+PRINT_MENU_P endp
 CODE_S ends
