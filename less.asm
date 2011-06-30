@@ -114,3 +114,4 @@ end MAIN_P
 ; 2 - Box da disegnare troppo lungo
 ; 3 - Impossibile aprire il file specificato
 ; 4 - Nessun file fornito sulla riga di comando.
+; 5 - Errore nella lettura del file.

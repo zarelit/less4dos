@@ -8,6 +8,7 @@ DATA_S segment public 'data'
 	msgcode02 DB 'Richiesto disegno di un box troppo lungo','$'
 	msgCode03 DB 'Impossibile leggere il file dati','$'
 	msgCode04 DB 'Nessun file fornito sulla riga di comando','$'
+	msgCode05 DB 'Errore nella lettura del file dati','$'
 	msgCodeUnknow DB 'Riscontrato un errore non specificato','$'
 
 	; Menu
@@ -56,6 +57,10 @@ QUIT_P proc near
 	cmp BL,04h
 	jne $+8
 		mov DX,offset msgCode04
+		jmp lblToDos
+	cmp BL,05h
+	jne $+8
+		mov DX,offset msgCode05
 		jmp lblToDos
 	lblUknknownError:
 		mov DX,offset msgCodeUnknow
