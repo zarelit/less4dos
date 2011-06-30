@@ -1,0 +1,942 @@
+X.Org X Server 1.7.7
+Release Date: 2010-05-04
+X Protocol Version 11, Revision 0
+Build Operating System: Slackware 13.1 Slackware Linux Project
+Current Operating System: Linux easynote 2.6.33.4 #3 SMP Wed May 12 23:13:09 CDT 2010 x86_64
+Kernel command line: auto BOOT_IMAGE=Linux ro root=802 vt.default_utf8=0
+Build Date: 05 May 2010  01:59:51AM
+ 
+Current version of pixman: 0.16.6
+	Before reporting problems, check http://wiki.x.org
+	to make sure that you have the latest version.
+Markers: (--) probed, (**) from config file, (==) default setting,
+	(++) from command line, (!!) notice, (II) informational,
+	(WW) warning, (EE) error, (NI) not implemented, (??) unknown.
+(==) Log file: "/var/log/Xorg.0.log", Time: Thu Jun 30 09:38:22 2011
+(==) Using config file: "/etc/X11/xorg.conf"
+Parse error on line 87 of section Files in file /etc/X11/xorg.conf
+	Ignoring obsolete keyword "RgbPath".
+(==) ServerLayout "Simple Layout"
+(**) |-->Screen "Screen 1" (0)
+(**) |   |-->Monitor "My Monitor"
+(**) |   |-->Device "VESA Framebuffer"
+(**) |-->Input Device "Mouse1"
+(**) |-->Input Device "Keyboard1"
+(==) Automatically adding devices
+(==) Automatically enabling devices
+(WW) The directory "/usr/share/fonts/local/" does not exist.
+	Entry deleted from font path.
+(WW) The directory "/usr/share/fonts/CID/" does not exist.
+	Entry deleted from font path.
+(WW) The directory "/usr/share/fonts/local" does not exist.
+	Entry deleted from font path.
+(WW) The directory "/usr/share/fonts/CID" does not exist.
+	Entry deleted from font path.
+(**) FontPath set to:
+	/usr/share/fonts/misc/,
+	/usr/share/fonts/OTF/,
+	/usr/share/fonts/TTF/,
+	/usr/share/fonts/Type1/,
+	/usr/share/fonts/Speedo/,
+	/usr/share/fonts/75dpi/:unscaled,
+	/usr/share/fonts/100dpi/:unscaled,
+	/usr/share/fonts/75dpi/,
+	/usr/share/fonts/100dpi/,
+	/usr/share/fonts/cyrillic/,
+	/usr/share/fonts/TTF,
+	/usr/share/fonts/OTF,
+	/usr/share/fonts/Type1,
+	/usr/share/fonts/misc,
+	/usr/share/fonts/75dpi/:unscaled,
+	/usr/share/fonts/100dpi/:unscaled,
+	/usr/share/fonts/75dpi,
+	/usr/share/fonts/100dpi,
+	/usr/share/fonts/cyrillic
+(==) ModulePath set to "/usr/lib64/xorg/modules"
+(WW) AllowEmptyInput is on, devices using drivers 'kbd', 'mouse' or 'vmmouse' will be disabled.
+(WW) Disabling Mouse1
+(WW) Disabling Keyboard1
+(II) Loader magic: 0x7c0040
+(II) Module ABI versions:
+	X.Org ANSI C Emulation: 0.4
+	X.Org Video Driver: 6.0
+	X.Org XInput driver : 7.0
+	X.Org Server Extension : 2.0
+(--) using VT number 7
+
+(--) PCI:*(0:1:0:0) 1039:6351:1631:c10b rev 16, Mem @ 0xc0000000/268435456, 0xfdee0000/131072, I/O @ 0x0000dc00/128
+(II) Open ACPI successful (/var/run/acpid.socket)
+(II) "extmod" will be loaded. This was enabled by default and also specified in the config file.
+(II) "dbe" will be loaded. This was enabled by default and also specified in the config file.
+(II) "glx" will be loaded. This was enabled by default and also specified in the config file.
+(II) "dri" will be loaded by default.
+(II) "dri2" will be loaded by default.
+(II) LoadModule: "dbe"
+(II) Loading /usr/lib64/xorg/modules/extensions/libdbe.so
+(II) Module dbe: vendor="X.Org Foundation"
+	compiled for 1.7.7, module version = 1.0.0
+	Module class: X.Org Server Extension
+	ABI class: X.Org Server Extension, version 2.0
+(II) Loading extension DOUBLE-BUFFER
+(II) LoadModule: "extmod"
+(II) Loading /usr/lib64/xorg/modules/extensions/libextmod.so
+(II) Module extmod: vendor="X.Org Foundation"
+	compiled for 1.7.7, module version = 1.0.0
+	Module class: X.Org Server Extension
+	ABI class: X.Org Server Extension, version 2.0
+(II) Loading extension MIT-SCREEN-SAVER
+(II) Loading extension XFree86-VidModeExtension
+(II) Loading extension DPMS
+(II) Loading extension XVideo
+(II) Loading extension XVideo-MotionCompensation
+(II) Loading extension X-Resource
+(II) LoadModule: "glx"
+(II) Loading /usr/lib64/xorg/modules/extensions/libglx.so
+(II) Module glx: vendor="X.Org Foundation"
+	compiled for 1.7.7, module version = 1.0.0
+	ABI class: X.Org Server Extension, version 2.0
+(==) AIGLX enabled
+(II) Loading extension GLX
+(II) LoadModule: "dri"
+(II) Loading /usr/lib64/xorg/modules/extensions/libdri.so
+(II) Module dri: vendor="X.Org Foundation"
+	compiled for 1.7.7, module version = 1.0.0
+	ABI class: X.Org Server Extension, version 2.0
+(II) Loading extension XFree86-DRI
+(II) LoadModule: "dri2"
+(II) Loading /usr/lib64/xorg/modules/extensions/libdri2.so
+(II) Module dri2: vendor="X.Org Foundation"
+	compiled for 1.7.7, module version = 1.1.0
+	ABI class: X.Org Server Extension, version 2.0
+(II) Loading extension DRI2
+(II) LoadModule: "sisimedia"
+(II) Loading /usr/lib64/xorg/modules/sisimedia_drv.so
+(II) Module sisimedia: vendor="X.Org Foundation"
+	compiled for 1.7.6.902, module version = 0.8.0
+	Module class: X.Org Video Driver
+	ABI class: X.Org Video Driver, version 6.0
+(II) SIS: driver for SiS chipsets: SIS5597/5598, SIS530/620,
+	SIS6326/AGP/DVD, SIS300/305, SIS630/730, SIS540, SIS315, SIS315H,
+	SIS315PRO/E, SIS550, SIS650/M650/651/740, SIS330(Xabre),
+	SIS[M]661[F|M]X/[M]741[GX]/[M]760[GX]/[M]761[GX]/662, SIS340,
+	[M]670/[M]770[GX], [M]671/[M]771[GX]
+(II) SIS: driver for XGI chipsets: Volari Z7 (XG20),
+	Volari V3XT/V5/V8/Duo (XG40/XG42)
+(II) Primary Device is: PCI 01@00:00:0
+(II) SIS_pci_probe - begin, entity_num=0
+(II)                        vendor_id=0x1039
+(II)                        device_id=0x6351
+(II)                        bus=1
+(II)                        dev=0
+(II)                        func=0
+(II) SIS_pci_probe - ConfigPciEntity found
+(II) SIS(0): SIS_pci_probe - GetEntityInfo chipset is 0x6351
+(II) SIS(0): SIS_pci_probe - end
+(II) SIS(0): SiS driver (2006/10/17-1, compiled for X.org 1.7.6.902)
+(II) SIS(0): Copyright (C) 2001-2005 Thomas Winischhofer <thomas@winischhofer.net> and others
+(II) SIS(0): *** See http://www.winischhofer.at/linuxsisvga.shtml
+(II) SIS(0): *** for documentation, updates and a Premium Version.
+(II) SIS(0): RandR rotation support not available in this version.
+(II) SIS(0): Dynamic modelist support not available in this version.
+(II) SIS(0): Screen growing support not available in this version.
+(II) SIS(0): Advanced Xv video blitter not available in this version.
+(II) SIS(0): Advanced MergedFB support not available in this version.
+(--) SIS(0): sisfb not found
+(--) SIS(0): Relocated I/O registers at 0xDC00
+(II) Loading sub module "ramdac"
+(II) LoadModule: "ramdac"
+(II) Module "ramdac" already built-in
+(**) SIS(0): Depth 24, (--) framebuffer bpp 32
+(==) SIS(0): RGB weight 888
+(==) SIS(0): Default visual is TrueColor
+(WW) SIS(0): Could not find/read video BIOS
+(**) SIS(0): Option "EnableSiSCtrl" "yes"
+(==) SIS(0): Using XAA acceleration architecture
+(==) SIS(0): Color HW cursor is enabled
+(II) SIS(0): Using VRAM command queue, size 512k
+(==) SIS(0): Hotkey display switching is enabled
+(**) SIS(0): SiSCtrl utility interface is enabled
+(==) SIS(0): X server will not keep DPI constant for all screen sizes
+(==) SIS(0): DRI enabled
+(--) SIS(0): 131072K shared video RAM (UMA)
+(--) SIS(0): DRAM type: DDR SDRAM
+(--) SIS(0): Memory clock: 503.174 MHz
+(--) SIS(0): DRAM bus width: 64 bit
+(--) SIS(0): Linear framebuffer at 0xC0000000
+(--) SIS(0): MMIO registers at 0xFDEE0000 (size 64K)
+(--) SIS(0): VideoRAM: 131072 KB
+(II) SIS(0): Using 20480K of framebuffer memory at offset 0K
+(II) Loading sub module "ddc"
+(II) LoadModule: "ddc"
+(II) Module "ddc" already built-in
+(--) SIS(0): Detected SiS307LV video bridge (Charter/UMC-1, ID 7; Rev 0xe1)
+(--) SIS(0): No CRT1/VGA detected
+(--) SIS(0): Detected LCD/plasma panel (1280x800, 11, non-exp., RGB18 [ec0305])
+(==) SIS(0): Using gamma correction (1.0, 1.0, 1.0)
+(II) SIS(0): CRT1 gamma correction is enabled
+(II) SIS(0): Separate Xv gamma correction for CRT1 is disabled
+(II) SIS(0): CRT2 gamma correction is enabled
+(--) SIS(0): Memory bandwidth at 32 bpp is 1006.35 MHz
+(--) SIS(0): Detected LCD PanelDelayCompensation 0x00 (for LCD=CRT2)
+(--) SIS(0): Detected LCD PanelDelayCompensation 0x00 (for LCD=CRT1)
+(--) SIS(0): 302LV/302ELV: Using EMI 0x6a0d7038 (LCD)
+(--) SIS(0): CRT2 DDC probing failed
+(==) SIS(0): Min pixel clock is 10 MHz
+(--) SIS(0): Max pixel clock is 340 MHz
+(II) SIS(0): Replaced entire mode list with built-in modes
+(II) SIS(0): Correcting bogus CRT2 monitor HSync range
+(II) SIS(0): "Unknown reason" in the following list means that the mode
+(II) SIS(0): is not supported on the chipset/bridge/current output device.
+(II) SIS(0): My Monitor: Using hsync range of 30.00-80.00 kHz
+(II) SIS(0): My Monitor: Using vrefresh range of 40.00-90.00 Hz
+(II) SIS(0): Clock range:  10.00 to 340.00 MHz
+(II) SIS(0): Not using default mode "800x600" (vrefresh out of range)
+(II) SIS(0): Not using default mode "800x600" (vrefresh out of range)
+(II) SIS(0): Not using default mode "800x600" (hsync out of range)
+(II) SIS(0): Not using default mode "640x480" (vrefresh out of range)
+(II) SIS(0): Not using default mode "640x480" (vrefresh out of range)
+(II) SIS(0): Not using default mode "640x480" (hsync out of range)
+(II) SIS(0): Not using default mode "640x480" (hsync out of range)
+(II) SIS(0): Not using default mode "1024x768" (hsync out of range)
+(II) SIS(0): Not using default mode "1024x768" (hsync out of range)
+(II) SIS(0): Not using default mode "1280x1024" (unknown reason)
+(II) SIS(0): Not using default mode "1280x1024" (unknown reason)
+(II) SIS(0): Not using default mode "1280x1024" (unknown reason)
+(II) SIS(0): Not using default mode "1280x1024" (unknown reason)
+(II) SIS(0): Not using default mode "1600x1200" (unknown reason)
+(II) SIS(0): Not using default mode "1600x1200" (unknown reason)
+(II) SIS(0): Not using default mode "1600x1200" (unknown reason)
+(II) SIS(0): Not using default mode "1600x1200" (unknown reason)
+(II) SIS(0): Not using default mode "1600x1200" (unknown reason)
+(II) SIS(0): Not using default mode "1600x1200" (unknown reason)
+(II) SIS(0): Not using default mode "1600x1200" (unknown reason)
+(II) SIS(0): Not using default mode "1920x1440" (unknown reason)
+(II) SIS(0): Not using default mode "1920x1440" (unknown reason)
+(II) SIS(0): Not using default mode "1920x1440" (unknown reason)
+(II) SIS(0): Not using default mode "1920x1440" (unknown reason)
+(II) SIS(0): Not using default mode "1920x1440" (unknown reason)
+(II) SIS(0): Not using default mode "1920x1440" (bad mode clock/interlace/doublescan)
+(II) SIS(0): Not using default mode "2048x1536" (unknown reason)
+(II) SIS(0): Not using default mode "2048x1536" (unknown reason)
+(II) SIS(0): Not using default mode "2048x1536" (unknown reason)
+(II) SIS(0): Not using default mode "2048x1536" (bad mode clock/interlace/doublescan)
+(II) SIS(0): Not using default mode "2048x1536" (bad mode clock/interlace/doublescan)
+(II) SIS(0): Not using default mode "1400x1050" (unknown reason)
+(II) SIS(0): Not using default mode "1400x1050" (unknown reason)
+(II) SIS(0): Not using default mode "1280x800" (hsync out of range)
+(II) SIS(0): Not using default mode "1440x900" (unknown reason)
+(II) SIS(0): Not using default mode "1440x900" (unknown reason)
+(II) SIS(0): Not using default mode "1440x900" (unknown reason)
+(II) SIS(0): Not using default mode "1366x768" (unknown reason)
+(--) SIS(0): Virtual size is 1280x800 (pitch 1280)
+(**) SIS(0): *Default mode "1280x800" (1280x800) (For CRT device: 135.2 MHz, 80.1 kHz, 75.1 Hz)
+(**) SIS(0): *Default mode "1024x768" (1024x768) (For CRT device: 94.5 MHz, 68.7 kHz, 85.0 Hz)
+(**) SIS(0): *Default mode "800x600" (800x600) (For CRT device: 56.2 MHz, 53.7 kHz, 85.1 Hz)
+(**) SIS(0): *Default mode "640x480" (640x480) (For CRT device: 36.1 MHz, 43.3 kHz, 85.1 Hz)
+(**) SIS(0):  Default mode "1280x800" (1280x800) (For CRT device: 107.9 MHz, 63.9 kHz, 59.9 Hz)
+(**) SIS(0):  Default mode "1024x768" (1024x768) (For CRT device: 78.7 MHz, 60.0 kHz, 75.0 Hz)
+(**) SIS(0):  Default mode "1024x768" (1024x768) (For CRT device: 74.9 MHz, 56.4 kHz, 70.0 Hz)
+(**) SIS(0):  Default mode "1024x768" (1024x768) (For CRT device: 65.1 MHz, 48.5 kHz, 60.1 Hz)
+(**) SIS(0):  Default mode "1024x768" (1024x768) (For CRT device: 44.9 MHz, 35.5 kHz, 86.8 Hz (I))
+(**) SIS(0):  Default mode "800x600" (800x600) (For CRT device: 49.5 MHz, 46.9 kHz, 75.0 Hz)
+(**) SIS(0):  Default mode "800x600" (800x600) (For CRT device: 50.1 MHz, 48.2 kHz, 72.4 Hz)
+(**) SIS(0):  Default mode "800x600" (800x600) (For CRT device: 40.0 MHz, 37.9 kHz, 60.3 Hz)
+(**) SIS(0):  Default mode "800x600" (800x600) (For CRT device: 36.1 MHz, 35.2 kHz, 56.3 Hz)
+(**) SIS(0):  Default mode "640x480" (640x480) (For CRT device: 31.5 MHz, 37.5 kHz, 75.0 Hz)
+(**) SIS(0):  Default mode "640x480" (640x480) (For CRT device: 31.5 MHz, 37.9 kHz, 72.8 Hz)
+(**) SIS(0):  Default mode "640x480" (640x480) (For CRT device: 25.1 MHz, 31.3 kHz, 59.7 Hz)
+(==) SIS(0): DPI set to (96, 96)
+(II) Loading sub module "fb"
+(II) LoadModule: "fb"
+(II) Loading /usr/lib64/xorg/modules/libfb.so
+(II) Module fb: vendor="X.Org Foundation"
+	compiled for 1.7.7, module version = 1.0.0
+	ABI class: X.Org ANSI C Emulation, version 0.4
+(II) Loading sub module "xaa"
+(II) LoadModule: "xaa"
+(II) Loading /usr/lib64/xorg/modules/libxaa.so
+(II) Module xaa: vendor="X.Org Foundation"
+	compiled for 1.7.7, module version = 1.2.1
+	ABI class: X.Org Video Driver, version 6.0
+(--) Depth 24 pixmap format is 32 bpp
+(II) Loading sub module "vbe"
+(II) LoadModule: "vbe"
+(II) Loading /usr/lib64/xorg/modules/libvbe.so
+(II) Module vbe: vendor="X.Org Foundation"
+	compiled for 1.7.7, module version = 1.1.0
+	ABI class: X.Org Video Driver, version 6.0
+(II) Loading sub module "int10"
+(II) LoadModule: "int10"
+(II) Loading /usr/lib64/xorg/modules/libint10.so
+(II) Module int10: vendor="X.Org Foundation"
+	compiled for 1.7.7, module version = 1.0.0
+	ABI class: X.Org Video Driver, version 6.0
+(II) SIS(0): initializing int10
+(II) SIS(0): Primary V_BIOS segment is: 0xc000
+(II) SIS(0): VESA BIOS detected
+(II) SIS(0): VESA VBE Version 3.0
+(II) SIS(0): VESA VBE Total Mem: 131072 kB
+(II) SIS(0): VESA VBE OEM: SiS
+(II) SIS(0): VESA VBE OEM Software Rev: 1.0
+(II) SIS(0): VESA VBE OEM Vendor: Silicon Integrated Systems Corp.
+(II) SIS(0): VESA VBE OEM Product: 6330
+(II) SIS(0): VESA VBE OEM Product Rev: S205.007
+(II) SIS(0): Setting standard mode 0x16
+drmOpenDevice: node name is /dev/dri/card0
+drmOpenDevice: node name is /dev/dri/card0
+drmOpenByBusid: Searching for BusID pci:0000:01:00.0
+drmOpenDevice: node name is /dev/dri/card0
+drmOpenDevice: open result is 13, (OK)
+drmOpenByBusid: drmOpenMinor returns 13
+drmOpenByBusid: drmGetBusid reports pci:0000:01:00.0
+(II) [drm] loaded kernel module for "sis" driver.
+(II) [drm] DRM interface version 1.3
+(II) [drm] DRM open master succeeded.
+(II) SIS(0): [drm] Using the DRM lock SAREA also for drawables.
+(II) SIS(0): [drm] framebuffer handle = 0xc0000000
+(II) SIS(0): [drm] added 1 reserved context for kernel
+(II) SIS(0): X context handle = 0x1
+(II) SIS(0): [drm] installed DRM signal handler
+(II) SIS(0): [dri] Video RAM memory heap: 0x1400000 to 0x7f70000 (110016KB)
+(II) SIS(0): [dri] handle = 0xfdee0000, size = 65536
+(II) SIS(0): [drm] AGP enabled
+(II) SIS(0): [drm] Allocated 32MB AGP memory
+(II) SIS(0): [drm] Bound 32MB AGP memory
+(II) SIS(0): [drm] No valid IRQ number for device 1:0:0 (code -22)
+(II) SIS(0): [dri] Visual configs initialized
+(II) SIS(0): Framebuffer from (0,0) to (1279,4094)
+(II) SIS(0): Using XFree86 Acceleration Architecture (XAA)
+	Screen to screen bit blits
+	Solid filled rectangles
+	8x8 mono pattern filled rectangles
+	8x8 color pattern filled rectangles
+	Solid Lines
+	Dashed Lines
+	Setting up tile and stipple cache:
+		32 128x128 slots
+		26 256x256 slots
+		7 512x512 slots
+		32 8x8 color pattern slots
+(--) SIS(0): CPU frequency 800.00Mhz
+(II) SIS(0): Benchmarking system RAM to video RAM memory transfer methods:
+(--) SIS(0): 	Checked libc memcpy()... 	122.1 MiB/s
+(--) SIS(0): 	Checked built-in-1 memcpy()... 	121.1 MiB/s
+(--) SIS(0): 	Checked built-in-2 memcpy()... 	121.8 MiB/s
+(--) SIS(0): 	Checked SSE memcpy()... 	122.6 MiB/s
+(--) SIS(0): Using SSE method for aligned data transfers to video RAM
+(--) SIS(0): Using libc method for unaligned data transfers to video RAM
+(==) SIS(0): Backing store disabled
+(==) SIS(0): Silken mouse enabled
+(==) SIS(0): DPMS enabled
+(--) SIS(0): Hardware supports one video overlay
+(II) SIS(0): Using SiS300/315/330/340/350 series HW Xv by default on CRT2
+PCI: CNF00 - CNF1B:
+	00: 00000000:00000000000000000000000000000000
+	04: 41004100:01000001000000000100000100000000
+	08: ffffffff:11111111111111111111111111111111
+	0c: ffffffff:11111111111111111111111111111111
+	10: b7143c00:10110111000101000011110000000000
+	14: 00008e0d:00000000000000001000111000001101
+	18: ffffffff:11111111111111111111111111111111
+PCI: CNF2C - CNF47:
+	2c: ffffffff:11111111111111111111111111111111
+	30: ffffffff:11111111111111111111111111111111
+	34: ffffffff:11111111111111111111111111111111
+	38: ffffffff:11111111111111111111111111111111
+	3c: ffffffff:11111111111111111111111111111111
+	40: 01100420:00000001000100000000010000100000
+	44: 00ff4407:00000000111111110100010000000111
+AGP: CNF50 - CNF5B:
+	50: 80138013:10000000000100111000000000010011
+	54: 80138013:10000000000100111000000000010011
+	58: 01010101:00000001000000010000000100000001
+CRT1: SR05 - SR12:
+	05: a1:10100001
+	06: 42:01000010
+	07: 44:01000100
+	08: 20:00100000
+	09: 05:00000101
+	0a: 01:00000001
+	0b: 00:00000000
+	0c: 07:00000111
+	0d: 00:00000000
+	0e: 02:00000010
+	0f: 08:00001000
+	10: 51:01010001
+	11: 03:00000011
+	12: 00:00000000
+CRT1: SR13 - SR16 (reserved):
+	13: 00:00000000
+	14: 00:00000000
+	15: 00:00000000
+	16: 00:00000000
+CRT1: SR19 - SR1A (reserved)
+CRT1: SR1B - SR3A:
+	1b: 00:00000000
+	1c: 8f:10001111
+	1d: 00:00000000
+	1e: 7a:01111010
+	1f: c0:11000000
+	20: a1:10100001
+	21: a3:10100011
+	22: f3:11110011
+	23: 00:00000000
+	24: 00:00000000
+	25: 00:00000000
+	26: 40:01000000
+	27: 1f:00011111
+	28: 7a:01111010
+	29: 06:00000110
+	2a: 82:10000010
+	2b: 1b:00011011
+	2c: e1:11100001
+	2d: 01:00000001
+	2e: 29:00101001
+	2f: 01:00000001
+	30: 82:10000010
+	31: 00:00000000
+	32: 50:01010000
+	33: 20:00100000
+	34: 00:00000000
+	35: 00:00000000
+	36: 00:00000000
+	37: 04:00000100
+	38: 86:10000110
+	39: 40:01000000
+	3a: 00:00000000
+CRT1: SR3B (reserved)
+CRT1: SR3C - SR3F:
+	3c: 08:00001000
+	3d: 01:00000001
+	3e: 01:00000001
+	3f: 00:00000000
+CRT1: CR19 - CR1A:
+	19: 00:00000000
+	1a: 00:00000000
+CRT1: CR1B - CR27 (undocumented?)
+CRT1: CR28 - CR2E:
+	28: 04:00000100
+	29: e0:11100000
+	2a: 00:00000000
+	2b: 00:00000000
+	2c: 00:00000000
+	2d: 00:00000000
+	2e: 00:00000000
+CRT1: CR2F (reserved)
+VGA BIOS: CR30 - CR3F:
+	30: 21:00100001
+	31: 40:01000000
+	32: 08:00001000
+	33: 00:00000000
+	34: 16:00010110
+	35: 00:00000000
+	36: ec:11101100
+	37: 03:00000011
+	38: 20:00100000
+	39: 30:00110000
+	3a: 00:00000000
+	3b: 08:00001000
+	3c: fc:11111100
+	3d: 22:00100010
+	3e: 00:00000000
+	3f: 00:00000000
+CRT1: CR40 - CR43:
+	40: 00:00000000
+	41: 00:00000000
+	42: 00:00000000
+	43: 00:00000000
+CRT1: CR44 - CR45 (reserved)
+CRT1: CR46 - CR67:
+	46: 00:00000000
+	47: fe:11111110
+	48: c0:11000000
+	49: 08:00001000
+	4a: bf:10111111
+	4b: 88:10001000
+	4c: 00:00000000
+	4d: 10:00010000
+	4e: 10:00010000
+	4f: 20:00100000
+	50: 00:00000000
+	51: 00:00000000
+	52: 12:00010010
+	53: 40:01000000
+	54: 00:00000000
+	55: 00:00000000
+	56: 00:00000000
+	57: 00:00000000
+	58: 00:00000000
+	59: 00:00000000
+	5a: 00:00000000
+	5b: 00:00000000
+	5c: 00:00000000
+	5d: 00:00000000
+	5e: 00:00000000
+	5f: 00:00000000
+	60: 00:00000000
+	61: 00:00000000
+	62: 00:00000000
+	63: 00:00000000
+	64: 00:00000000
+	65: 00:00000000
+	66: 00:00000000
+	67: 00:00000000
+CRT1: CR68 - CR6F (DRAM registers reserved for backward compatibility with 760)
+CRT1: CR70 - CR77 (undocumented?)
+SMA BIOS: CR78 - CR7F:
+	78: 44:01000100
+	79: 71:01110001
+	7a: 98:10011000
+	7b: 02:00000010
+	7c: a3:10100011
+	7d: 05:00000101
+	7e: a3:10100011
+	7f: 03:00000011
+CRT1: CR80 - CR9B:
+	80: ffffffff:11111111111111111111111111111111
+	84: ffffffff:11111111111111111111111111111111
+	88: ffffffff:11111111111111111111111111111111
+	8c: ffffffff:11111111111111111111111111111111
+	90: ffffffff:11111111111111111111111111111111
+	94: ffffffff:11111111111111111111111111111111
+	98: ffffffff:11111111111111111111111111111111
+	9c: ffffffff:11111111111111111111111111111111
+	a0: ffffffff:11111111111111111111111111111111
+	a4: ffffffff:11111111111111111111111111111111
+	a8: ffffffff:11111111111111111111111111111111
+	ac: ffffffff:11111111111111111111111111111111
+	b0: ffffffff:11111111111111111111111111111111
+CRT1: CRC0 - CRF3:
+	c0: ffffffff:11111111111111111111111111111111
+	c4: ffffffff:11111111111111111111111111111111
+	c8: ffffffff:11111111111111111111111111111111
+	cc: ffffffff:11111111111111111111111111111111
+	d0: ffffffff:11111111111111111111111111111111
+	d4: ffffffff:11111111111111111111111111111111
+	d8: ffffffff:11111111111111111111111111111111
+	dc: ffffffff:11111111111111111111111111111111
+	e0: ffffffff:11111111111111111111111111111111
+	e4: ffffffff:11111111111111111111111111111111
+	e8: ffffffff:11111111111111111111111111111111
+	ec: ffffffff:11111111111111111111111111111111
+	f0: ffffffff:11111111111111111111111111111111
+CRT2: SIGNAL REGISTERS, PART1 00 - 45:
+	00: 41:01000001
+	01: 79:01111001
+	02: 4e:01001110
+	03: 51:01010001
+	04: 00:00000000
+	05: 00:00000000
+	06: 00:00000000
+	07: 80:10000000
+	08: 7f:01111111
+	09: 52:01010010
+	0a: 10:00010000
+	0b: 20:00100000
+	0c: 55:01010101
+	0d: 30:00110000
+	0e: 2f:00101111
+	0f: 1f:00011111
+	10: 28:00101000
+	11: 3a:00111010
+	12: 1b:00011011
+	13: 00:00000000
+	14: a2:10100010
+	15: 06:00000110
+	16: 00:00000000
+	17: a0:10100000
+	18: 22:00100010
+	19: 25:00100101
+	1a: d8:11011000
+	1b: 2f:00101111
+	1c: 1f:00011111
+	1d: 1b:00011011
+	1e: 20:00100000
+	1f: fe:11111110
+	20: 1c:00011100
+	21: 1f:00011111
+	22: cc:11001100
+	23: cd:11001101
+	24: 00:00000000
+	25: 00:00000000
+	26: 10:00010000
+	27: 04:00000100
+	28: 00:00000000
+	29: 00:00000000
+	2a: 03:00000011
+	2b: 00:00000000
+	2c: 30:00110000
+	2d: 03:00000011
+	2e: 8e:10001110
+	2f: 05:00000101
+	30: 01:00000001
+	31: 12:00010010
+	32: 35:00110101
+	33: a1:10100001
+	34: 00:00000000
+	35: 23:00100011
+	36: d6:11010110
+	37: fd:11111101
+	38: 62:01100010
+	39: 0a:00001010
+	3a: 00:00000000
+	3b: 00:00000000
+	3c: 00:00000000
+	3d: 00:00000000
+	3e: 01:00000001
+	3f: 01:00000001
+	40: 00:00000000
+	41: 00:00000000
+	42: 00:00000000
+	43: 00:00000000
+	44: 00:00000000
+	45: 00:00000000
+CRT2: TV SIGNAL REGISTERS, PART2 00 - 4d:
+	00: 3c:00111100
+	01: 34:00110100
+	02: 1b:00011011
+	03: 1f:00011111
+	04: 21:00100001
+	05: 2f:00101111
+	06: 1f:00011111
+	07: 0c:00001100
+	08: 0c:00001100
+	09: 90:10010000
+	0a: 40:01000000
+	0b: 01:00000001
+	0c: 0b:00001011
+	0d: 06:00000110
+	0e: 0d:00001101
+	0f: 04:00000100
+	10: 0a:00001010
+	11: 06:00000110
+	12: 14:00010100
+	13: 0d:00001101
+	14: 04:00000100
+	15: 0a:00001010
+	16: 00:00000000
+	17: 81:10000001
+	18: 1b:00011011
+	19: 2f:00101111
+	1a: 78:01111000
+	1b: 7e:01111110
+	1c: 28:00101000
+	1d: 55:01010101
+	1e: da:11011010
+	1f: 08:00001000
+	20: 07:00000111
+	21: 68:01101000
+	22: 75:01110101
+	23: 08:00001000
+	24: 0b:00001011
+	25: 35:00110101
+	26: e2:11100010
+	27: a2:10100010
+	28: 52:01010010
+	29: 33:00110011
+	2a: aa:10101010
+	2b: 45:01000101
+	2c: ff:11111111
+	2d: 58:01011000
+	2e: 7f:01111111
+	2f: 1e:00011110
+	30: c5:11000101
+	31: 21:00100001
+	32: f0:11110000
+	33: 7b:01111011
+	34: d6:11010110
+	35: 00:00000000
+	36: 00:00000000
+	37: 00:00000000
+	38: 00:00000000
+	39: 92:10010010
+	3a: 8f:10001111
+	3b: 40:01000000
+	3c: 60:01100000
+	3d: 80:10000000
+	3e: 14:00010100
+	3f: ff:11111111
+	40: ff:11111111
+	41: ff:11111111
+	42: 14:00010100
+	43: 4d:01001101
+	44: 00:00000000
+	45: 60:01100000
+	46: 78:01111000
+	47: 1d:00011101
+	48: c0:11000000
+	49: 40:01000000
+	4a: a4:10100100
+	4b: 69:01101001
+	4c: 61:01100001
+	4d: 03:00000011
+CRT2: TV COPY PROTECTION, PART3 00 - 40:
+	00: 00:00000000
+	01: 84:10000100
+	02: 10:00010000
+	03: 00:00000000
+	04: 00:00000000
+	05: c1:11000001
+	06: cb:11001011
+	07: 08:00001000
+	08: a5:10100101
+	09: 80:10000000
+	0a: 31:00110001
+	0b: 20:00100000
+	0c: 00:00000000
+	0d: 02:00000010
+	0e: 0a:00001010
+	0f: 10:00010000
+	10: 41:01000001
+	11: 87:10000111
+	12: 08:00001000
+	13: f5:11110101
+	14: b7:10110111
+	15: 00:00000000
+	16: 04:00000100
+	17: 01:00000001
+	18: 01:00000001
+	19: 40:01000000
+	1a: 40:01000000
+	1b: 00:00000000
+	1c: 10:00010000
+	1d: 2f:00101111
+	1e: 0b:00001011
+	1f: 8c:10001100
+	20: 40:01000000
+	21: 02:00000010
+	22: 40:01000000
+	23: 49:01001001
+	24: 89:10001001
+	25: 81:10000001
+	26: 03:00000011
+	27: 00:00000000
+	28: 40:01000000
+	29: 04:00000100
+	2a: 82:10000010
+	2b: 2a:00101010
+	2c: 01:00000001
+	2d: 8b:10001011
+	2e: 04:00000100
+	2f: 00:00000000
+	30: 80:10000000
+	31: 48:01001000
+	32: 69:01101001
+	33: ba:10111010
+	34: 50:01010000
+	35: 11:00010001
+	36: a2:10100010
+	37: 00:00000000
+	38: 03:00000011
+	39: 81:10000001
+	3a: 4a:01001010
+	3b: 59:01011001
+	3c: 43:01000011
+	3d: 1a:00011010
+	3e: 40:01000000
+	3f: a6:10100110
+	40: 01:00000001
+CRT2: SIGNAL REGISTERS, PART4 00 - 3A:
+	00: 07:00000111
+	01: e1:11100001
+	02: 01:00000001
+	03: 49:01001001
+	04: 00:00000000
+	05: 00:00000000
+	06: 00:00000000
+	07: df:11011111
+	08: 35:00110101
+	09: 00:00000000
+	0a: 9c:10011100
+	0b: 62:01100010
+	0c: 83:10000011
+	0d: 8e:10001110
+	0e: 60:01100000
+	0f: 03:00000011
+	10: 80:10000000
+	11: 00:00000000
+	12: 08:00001000
+	13: 01:00000001
+	14: 01:00000001
+	15: 2b:00101011
+	16: 7f:01111111
+	17: 2a:00101010
+	18: 32:00110010
+	19: 40:01000000
+	1a: 00:00000000
+	1b: 00:00000000
+	1c: 28:00101000
+	1d: 3f:00111111
+	1e: 10:00010000
+	1f: f6:11110110
+	20: aa:10101010
+	21: d0:11010000
+	22: be:10111110
+	23: c7:11000111
+	24: 0e:00001110
+	25: 10:00010000
+	26: 04:00000100
+	27: 0c:00001100
+	28: 1c:00011100
+	29: 9e:10011110
+	2a: 00:00000000
+	2b: 10:00010000
+	2c: 02:00000010
+	2d: 3f:00111111
+	2e: 02:00000010
+	2f: 3f:00111111
+	30: 68:01101000
+	31: 0d:00001101
+	32: 70:01110000
+	33: 38:00111000
+	34: 10:00010000
+	35: c0:11000000
+	36: 56:01010110
+	37: 35:00110101
+	38: 0a:00001010
+	39: ff:11111111
+	3a: fd:11111101
+CRT2: PALETTE SIGNAL REGISTERS, PART5 00 - 00 (?):
+	00: 00:00000000
+(II) SIS(0): Default Xv adaptor is Video Overlay
+(II) SIS(0): [DRI] installation complete
+(II) SIS(0): Direct rendering enabled
+(II) SIS(0): Initialized SISCTRL extension version 0.1
+(II) SIS(0): Registered screen 0 with SISCTRL extension version 0.1
+(==) RandR enabled
+(II) Initializing built-in extension Generic Event Extension
+(II) Initializing built-in extension SHAPE
+(II) Initializing built-in extension MIT-SHM
+(II) Initializing built-in extension XInputExtension
+(II) Initializing built-in extension XTEST
+(II) Initializing built-in extension BIG-REQUESTS
+(II) Initializing built-in extension SYNC
+(II) Initializing built-in extension XKEYBOARD
+(II) Initializing built-in extension XC-MISC
+(II) Initializing built-in extension XINERAMA
+(II) Initializing built-in extension XFIXES
+(II) Initializing built-in extension RENDER
+(II) Initializing built-in extension RANDR
+(II) Initializing built-in extension COMPOSITE
+(II) Initializing built-in extension DAMAGE
+(II) AIGLX: Screen 0 is not DRI2 capable
+drmOpenDevice: node name is /dev/dri/card0
+drmOpenDevice: open result is 14, (OK)
+drmOpenByBusid: Searching for BusID pci:0000:01:00.0
+drmOpenDevice: node name is /dev/dri/card0
+drmOpenDevice: open result is 14, (OK)
+drmOpenByBusid: drmOpenMinor returns 14
+drmOpenByBusid: drmGetBusid reports pci:0000:01:00.0
+(EE) AIGLX error: dlopen of /usr/lib64/xorg/modules/dri/sis671_dri.so failed (/usr/lib64/xorg/modules/dri/sis671_dri.so: cannot open shared object file: No such file or directory)
+(EE) AIGLX: reverting to software rendering
+(II) AIGLX: Loaded and initialized /usr/lib64/xorg/modules/dri/swrast_dri.so
+(II) GLX: Initialized DRISWRAST GL provider for screen 0
+(II) config/hal: Adding input device Asus Laptop extra buttons
+(II) LoadModule: "evdev"
+(II) Loading /usr/lib64/xorg/modules/input/evdev_drv.so
+(II) Module evdev: vendor="X.Org Foundation"
+	compiled for 1.7.6, module version = 2.3.3
+	Module class: X.Org XInput Driver
+	ABI class: X.Org XInput driver, version 7.0
+(**) Asus Laptop extra buttons: always reports core events
+(**) Asus Laptop extra buttons: Device: "/dev/input/event8"
+(II) Asus Laptop extra buttons: Found keys
+(II) Asus Laptop extra buttons: Configuring as keyboard
+(II) XINPUT: Adding extended input device "Asus Laptop extra buttons" (type: KEYBOARD)
+(**) Option "xkb_rules" "evdev"
+(**) Option "xkb_model" "evdev"
+(**) Option "xkb_layout" "it"
+(**) Option "xkb_options" "terminate:ctrl_alt_bksp"
+(II) config/hal: Adding input device Macintosh mouse button emulation
+(**) Macintosh mouse button emulation: always reports core events
+(**) Macintosh mouse button emulation: Device: "/dev/input/event0"
+(II) Macintosh mouse button emulation: Found 3 mouse buttons
+(II) Macintosh mouse button emulation: Found relative axes
+(II) Macintosh mouse button emulation: Found x and y relative axes
+(II) Macintosh mouse button emulation: Configuring as mouse
+(**) Macintosh mouse button emulation: YAxisMapping: buttons 4 and 5
+(**) Macintosh mouse button emulation: EmulateWheelButton: 4, EmulateWheelInertia: 10, EmulateWheelTimeout: 200
+(II) XINPUT: Adding extended input device "Macintosh mouse button emulation" (type: MOUSE)
+(**) Macintosh mouse button emulation: (accel) keeping acceleration scheme 1
+(**) Macintosh mouse button emulation: (accel) acceleration profile 0
+(II) Macintosh mouse button emulation: initialized for relative axes.
+(II) config/hal: Adding input device SynPS/2 Synaptics TouchPad
+(II) LoadModule: "synaptics"
+(II) Loading /usr/lib64/xorg/modules/input/synaptics_drv.so
+(II) Module synaptics: vendor="X.Org Foundation"
+	compiled for 1.7.5, module version = 1.2.2
+	Module class: X.Org XInput Driver
+	ABI class: X.Org XInput driver, version 7.0
+(II) Synaptics touchpad driver version 1.2.2
+(**) Option "Device" "/dev/input/event7"
+(II) SynPS/2 Synaptics TouchPad: x-axis range 1472 - 5472
+(II) SynPS/2 Synaptics TouchPad: y-axis range 1408 - 4448
+(II) SynPS/2 Synaptics TouchPad: pressure range 0 - 255
+(II) SynPS/2 Synaptics TouchPad: finger width range 0 - 0
+(II) SynPS/2 Synaptics TouchPad: buttons: left right double triple
+(**) Option "SHMConfig" "true"
+(**) Option "FingerLow" "25"
+(**) Option "FingerHigh" "30"
+(**) Option "MaxTapTime" "180"
+(**) Option "VertEdgeScroll" "true"
+(**) Option "RTCornerButton" "3"
+(**) Option "RBCornerButton" "2"
+(**) Option "TapButton1" "1"
+(**) Option "TapButton2" "3"
+(**) Option "TapButton3" "2"
+(--) SynPS/2 Synaptics TouchPad: touchpad found
+(**) SynPS/2 Synaptics TouchPad: always reports core events
+(II) XINPUT: Adding extended input device "SynPS/2 Synaptics TouchPad" (type: TOUCHPAD)
+(**) SynPS/2 Synaptics TouchPad: (accel) keeping acceleration scheme 1
+(**) SynPS/2 Synaptics TouchPad: (accel) acceleration profile 0
+(--) SynPS/2 Synaptics TouchPad: touchpad found
+(II) config/hal: Adding input device AT Translated Set 2 keyboard
+(**) AT Translated Set 2 keyboard: always reports core events
+(**) AT Translated Set 2 keyboard: Device: "/dev/input/event1"
+(II) AT Translated Set 2 keyboard: Found keys
+(II) AT Translated Set 2 keyboard: Configuring as keyboard
+(II) XINPUT: Adding extended input device "AT Translated Set 2 keyboard" (type: KEYBOARD)
+(**) Option "xkb_rules" "evdev"
+(**) Option "xkb_model" "evdev"
+(**) Option "xkb_layout" "it"
+(**) Option "xkb_options" "terminate:ctrl_alt_bksp"
+(II) config/hal: Adding input device Sleep Button
+(**) Sleep Button: always reports core events
+(**) Sleep Button: Device: "/dev/input/event3"
+(II) Sleep Button: Found keys
+(II) Sleep Button: Configuring as keyboard
+(II) XINPUT: Adding extended input device "Sleep Button" (type: KEYBOARD)
+(**) Option "xkb_rules" "evdev"
+(**) Option "xkb_model" "evdev"
+(**) Option "xkb_layout" "it"
+(**) Option "xkb_options" "terminate:ctrl_alt_bksp"
+(II) config/hal: Adding input device Power Button
+(**) Power Button: always reports core events
+(**) Power Button: Device: "/dev/input/event2"
+(II) Power Button: Found keys
+(II) Power Button: Configuring as keyboard
+(II) XINPUT: Adding extended input device "Power Button" (type: KEYBOARD)
+(**) Option "xkb_rules" "evdev"
+(**) Option "xkb_model" "evdev"
+(**) Option "xkb_layout" "it"
+(**) Option "xkb_options" "terminate:ctrl_alt_bksp"
+(II) config/hal: Adding input device Video Bus
+(**) Video Bus: always reports core events
+(**) Video Bus: Device: "/dev/input/event6"
+(II) Video Bus: Found keys
+(II) Video Bus: Configuring as keyboard
+(II) XINPUT: Adding extended input device "Video Bus" (type: KEYBOARD)
+(**) Option "xkb_rules" "evdev"
+(**) Option "xkb_model" "evdev"
+(**) Option "xkb_layout" "it"
+(**) Option "xkb_options" "terminate:ctrl_alt_bksp"
+(II) config/hal: Adding input device Power Button
+(**) Power Button: always reports core events
+(**) Power Button: Device: "/dev/input/event5"
+(II) Power Button: Found keys
+(II) Power Button: Configuring as keyboard
+(II) XINPUT: Adding extended input device "Power Button" (type: KEYBOARD)
+(**) Option "xkb_rules" "evdev"
+(**) Option "xkb_model" "evdev"
+(**) Option "xkb_layout" "it"
+(**) Option "xkb_options" "terminate:ctrl_alt_bksp"

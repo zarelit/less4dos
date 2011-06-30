@@ -7,7 +7,7 @@ DATA_S segment public 'data'
 	kBufSize EQU 80*25*3
 	; buffer null terminated, non si sa mai
 	textBuffer DB kBufSize dup(?),00h
-	endOfBuffer DW offset textBuffer+1
+	endOfBuffer DW offset textBuffer
 	;puntatore all'inizio del testo visibile
 	;inizialmente in cima al buffer
 	viewPort DW offset textBuffer
@@ -29,9 +29,19 @@ BUFFER_FILL_P proc near
 	; controllo quanti caratteri ho letto e imposto
 	; l'end of buffer di conseguenza
 	jc lblReadError
+	; Se abbiamo raggiunto la fine del file, settiamo il carry
+	test AX,AX ; raggiunto EOF con la lettura precedente
+	jz lblEOF
+	; Abbiamo letto qualche byte....
+	mov endOfBuffer,offset textBuffer
 	add endOfBuffer,AX ;sposto l'end-of-buffer e termino il buffer
 	mov BX,endOfBuffer
 	mov byte ptr [BX],00h
+	clc ;scrolldown_p conta di trovare il carry pulito
+	ret
+	
+	lblEOF:
+	stc
 	ret
 
 	lblReadError:
@@ -54,11 +64,23 @@ SCROLLDOWN_P proc near
 	repnz scasb
 	; Non scrolliamo se abbiamo superato la validità del buffer.
 	cmp DI,endOfBuffer
-	ja nonscrolldown
+	jnb lblFineBuffer
 	mov viewPort,DI ;aggiorno il viewport
 	pop ES
 	ret
-	nonscrolldown:
+	lblFineBuffer:
+	;Abbiamo raggiunto la fine del buffer
+	;Ma prima proviamo a vedere se possiamo ancora caricare dal file
+	call BUFFER_FILL_P
+	jc dontScroll
+	; Abbiamo ricaricato il buffer
+	; quindi resettiamo il viewport
+	mov DI,offset textBuffer
+	mov viewPort,DI
+	pop ES
+	ret
+	
+	dontscroll: ;Rimane tutto come prima
 	mov DI,viewPort ;ritorno al DI originale
 	pop ES
 	ret
