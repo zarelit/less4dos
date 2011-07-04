@@ -195,15 +195,30 @@ REWIND_P proc near
 	jc lblGetPosError
 	; A questo punto il file è pronto per essere letto.
 	; Ma sovrascriverebbe i dati già esistenti tra viewPort e endOfBuffer
+	; dato che rewind_p viene chiamata da scrollup_p, ES punta già al segmento dati.
 	; Si distinguono due casi, quello in cui l'inserimento di nuovi dati non comporta
 	; lo slittamento di dati fuori dal buffer e quello in cui dei dati vengono persi
 	; Basta controllare se tempBufLen+rewindSize è minore di kBufSize
 	mov BX,rewindSize
 	add BX,tempBufLen
 	cmp BX,offset textBuffer+kBufSize ;puntatore alla fine in memoria del buffer
-	jbe inPlace; non scarto caratteri
-	; scarto caratteri
-		
+	jbe inPlace
+	; scarto caratteri 
+	
+	; non scarto caratteri
+	inPlace:
+		; BX=nuovo endOfBuffer
+		std ;copia al contrario, evita la ripetizione dei dati per overlap
+		mov SI,endOfBuffer
+		mov DI,BX
+		; copio i dati, sono tempBufLen bytes + 1 terminatore
+		mov CX,tempBufLen
+		inc CX
+		repnz movsb
+		cld
+		; aggiorno l'endOfBuffer
+		mov endOfBuffer,BX
+		jmp fillTopOfBufer
 
 	lblGetPosError:
 		mov exitCode,06h
