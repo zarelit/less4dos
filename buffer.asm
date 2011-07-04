@@ -140,7 +140,11 @@ REWIND_P proc near
 	mov DX,00h
 	int 21h
 	; se il carry non è settato abbiamo la posizione in DX:AX
-	jc lblGetPosError
+	jc lblToGetPosError
+	jmp skipGetPosError
+	lblToGetPosError:
+	jmp lblGetPosError
+	skipGetPosError: ;selva di jump e label per limitazione salti short
 	
 	; salviamo il puntatore fisico (non si sa mai)
 	mov physCurHigh,DX
@@ -192,7 +196,7 @@ REWIND_P proc near
 	mov AL,00h ;dall'origine
 	mov BX,fileHandle
 	int 21h	
-	jc lblGetPosError
+	jc lblToGetPosError
 	; A questo punto il file è pronto per essere letto.
 	; Ma sovrascriverebbe i dati già esistenti tra viewPort e endOfBuffer
 	; dato che rewind_p viene chiamata da scrollup_p, ES punta già al segmento dati.
@@ -201,14 +205,41 @@ REWIND_P proc near
 	; Basta controllare se tempBufLen+rewindSize è minore di kBufSize
 	mov BX,rewindSize
 	add BX,tempBufLen
-	cmp BX,offset textBuffer+kBufSize ;puntatore alla fine in memoria del buffer
-	jbe inPlace
+	cmp BX,kBufSize ;puntatore alla fine in memoria del buffer
+	jb inPlace
 	; scarto caratteri 
-	
+	nonInPlace:
+		std
+		mov SI,endOfBuffer
+		dec SI ;viene usato il terminatore di fine buffer
+		mov CX,BX
+		sub CX,kBufSize ;numero di caratteri effettivamente scartati
+
+		; sistemo il viewPort
+		mov AX, viewPort
+		add AX, rewindSize
+		sub AX,CX
+		dec AX
+		mov viewPort, AX
+
+		sub SI,CX ;SI è OK
+		mov DI,offset textBuffer+kBufSize
+		dec DI
+		mov BX,tempBufLen
+		sub BX,CX
+		xchg BX,CX
+		; salvo sullo stack di quanto deve spostarsi il puntatore fisico
+		push CX
+		repnz movsb
+		;aggiorno l'end of buffer
+		mov endOfBuffer,offset textBuffer+kBufSize
+		cld
+		jmp fillTopBuffer
 	; non scarto caratteri
 	inPlace:
 		; BX=nuovo endOfBuffer
 		std ;copia al contrario, evita la ripetizione dei dati per overlap
+		add BX,offset textBuffer
 		mov SI,endOfBuffer
 		mov DI,BX
 		; copio i dati, sono tempBufLen bytes + 1 terminatore
@@ -218,8 +249,32 @@ REWIND_P proc near
 		cld
 		; aggiorno l'endOfBuffer
 		mov endOfBuffer,BX
-		jmp fillTopOfBufer
-
+		; salvo sullo stack di quanto deve spostarsi il puntatore fisico
+		mov AX,tempBufLen
+		push AX
+		; sistemo il viewPort
+		mov AX, viewPort
+		add AX, rewindSize
+		mov viewPort, AX
+		jmp fillTopBuffer
+	fillTopBuffer:
+		;riempio la prima parte del buffer
+		mov AH,3Fh ;lettura da file
+		mov BX,fileHandle
+		mov DX,offset TextBuffer
+		mov CX,rewindSize
+		int 21h
+		jc lblGetPosError
+		
+		;sposto il puntatore fisico al byte che corrisponde a endOfBuffer
+		mov AH,42h ;seek
+		mov AL,01h ; dalla posizione attuale
+		pop DX ;parte bassa dell'offset
+		mov CX,0000h ;alta dell'offset
+		mov BX,fileHandle
+		int 21h
+		
+		ret
 	lblGetPosError:
 		mov exitCode,06h
 		call QUIT_P
