@@ -15,6 +15,7 @@ DATA_S segment public 'data'
 	;inizialmente in cima al buffer
 	viewPort DW offset textBuffer
 	viewPortW DB ? ;lunghezza di una riga del viewport
+		  DB 00h ;nel caso volessi usarlo come word
 	; "registro di stato" del buffer
 	; bit 0 - EOF reached
 	; bit 1 - End Of String reached
@@ -166,12 +167,36 @@ SCROLLUP_P proc near
 	repnz scasb
 	test CX,CX ; uscito per CX=0?
 	jz updateViewPort
-	; Passo DUE
-	
 
+	; Passo DUE
+	; se il carattere che precede LF è CR saltiamolo
+	cmp byte ptr [DI],0Dh
+	jnz CRnotPresent
+	dec DI
+	CRnotPresent:
+	
+	; Passo TRE
+	; cerco LF per scrW caratteri, contando quante volte fallisco in DX
+	xor DL,DL
+	searchRowStart:
+		mov CL,viewPortW
+		repnz scasb
+		test CX,CX
+		jnz inizioRiga
+		inc DL
+	jmp searchRowStart
+
+	inizioRiga: ;siamo sul carattere che precede LF della riga precedente
+	inc DI
+	inc DI
+	mov CL,DL ;ci spostiamo di tante righe quanti i fallimenti
+	reachRow:	
+	add DI,word ptr viewPortW
+	dec CX
+	jnz reachRow
+	
 	updateViewPort:
 	mov viewPort,DI
-	pop ES
 	jmp outScrollUp
 	;evento hitTop - ripristino il viewport precedente
 	hitTop:
