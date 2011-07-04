@@ -88,9 +88,9 @@ MAIN_P proc near
 		call BOX_P
 		jz checkRefill
 		;se BOX_P ritorna non zero è END-OF-BOX 
-		mov BX,bufStatus
-		and BX,0FDh ; clear end of buffer
-		mov bufStatus,BX
+		mov BL,bufStatus
+		and BL,0FDh ; clear end of buffer
+		mov bufStatus,BL
 		; Attesa risposta utente
 		lblWaitUser:
 		call USER_P
@@ -102,10 +102,10 @@ MAIN_P proc near
 	checkRefill:
 		;BOX_P ci ha detto che ha finito la stringa.
 		;Quindi è End of buffer
-		mov BX,bufStatus
-		or BX,02h ;set end-of-buffer
-		mov bufStatus,BX
-		test BX,01h ;check for EOF
+		mov BL,bufStatus
+		or BL,02h ;set end-of-buffer
+		mov bufStatus,BL
+		test BL,01h ;check for EOF
 		jnz lblWaitUser ;no - il file è finito
 		call REFILL_P
 	jmp lblEventLoop

@@ -39,16 +39,16 @@ BUFFER_FILL_P proc near
 	mov BX,endOfBuffer
 	mov byte ptr [BX],00h
 	
-	mov BX,bufStatus
+	mov BL,bufStatus
 	cmp AX,CX ; Controllo se abbiamo raggiunto la fine del file
 	je eofNotReached
-	or BX,01h
-	mov bufStatus,BX ;imposto il bit di EOF raggiunto
+	or BL,01h
+	mov bufStatus,BL ;imposto il bit di EOF raggiunto
 	ret
 
 	eofNotReached:
-	and BX,0FEh ;cancello il bit EOF
-	mov bufStatus,BX
+	and BL,0FEh ;cancello il bit EOF
+	mov bufStatus,BL
 	ret
 
 	lblReadError:
@@ -59,7 +59,56 @@ BUFFER_FILL_P endp
 ; Lo scopo di REFILL_P e' di riempire il buffer con nuovo contenuto dal file, 
 ; mantenendo pero' nel buffer la parte visibile (da viewport alla fine del buffer)
 REFILL_P proc near
+	; prima parte, copio da viewPort alla fine della stringa
+	; e sposto viewPort in testa
+	; dato che BOX_P è uscita con end-of-string in DI c'è l'offset
+	; della fine della stringa, pertanto
+	; i caratteri da copiare sono SI-viewPort
+	dec SI
+	mov CX,SI
+	sub CX,viewPort
+	push CX ;questo conteggio ci serve dopo per sapere quanto buffer abbiamo occupato
+	;uso movsb che sposta da ds:si a es:di
+	push ES ;salvo ES alla memoria video
+	push DS 
+	pop ES ;copio DS in ES
+	; le aree di memoria non possono essere intersecate
+	mov SI,viewPort
+	mov DI,offset textBuffer
+	repnz movsb
+	pop ES ;ripristino ES alla memoria video
+	mov viewPort,offset textBuffer
+	mov endOfBuffer,DI
 
+	;riempiamo il resto del buffer con nuovo contenuto dal file
+	pop BX ;ripristiniamo il conteggio dei caratteri
+	mov CX,kBufSize
+	sub CX,BX ;in CX numero di caratteri che possiamo leggere dal file
+	mov AH,3Fh
+	mov BX,fileHandle 
+	mov DX,endOfBuffer ;iniziamo a scrivere da dove avevamo interrotto
+	int 21h
+	jc lblRefillError
+	
+	add endOfBuffer,AX ;sposto l'end-of-buffer e termino il buffer
+	mov BX,endOfBuffer
+	mov byte ptr [BX],00h
+	
+	mov BL,bufStatus
+	cmp AX,CX ; Controllo se abbiamo raggiunto la fine del file
+	je refillEofNotReached
+	or BL,01h
+	mov bufStatus,BL ;imposto il bit di EOF raggiunto
+	ret
+
+	refillEofNotReached:
+	and BL,0FEh ;cancello il bit EOF
+	mov bufStatus,BL
+	ret
+	
+	lblRefillError:
+		mov exitCode,05h
+		call QUIT_P
 REFILL_P endp
 
 ; Scrolldown_p sposta il viewport di una riga
@@ -67,12 +116,13 @@ REFILL_P endp
 SCROLLDOWN_P proc near
 	; nel caso ci siano entrambi EOF and End Of Buffer non posso
 	; fare scrolling
-	mov BX,bufStatus
-	test BX,01h
+	mov BL,bufStatus
+	test BL,01h
 	jz tryScroll
-	test BX,02h
+	test BL,02h
 	jnz dontScroll
 
+	tryScroll:
 	; cerco l'inizio della prossima riga
 	; ci si ferma incontrando LF oppure dopo viewPortW caratteri
 	mov CL,viewPortW
@@ -83,9 +133,6 @@ SCROLLDOWN_P proc near
 	mov ES,BX
 	mov DI,viewPort
 	repnz scasb
-	; Non scrolliamo se abbiamo superato la validità del buffer.
-	cmp DI,endOfBuffer
-	jnb lblFineBuffer
 	mov viewPort,DI ;aggiorno il viewport
 	pop ES
 	ret
