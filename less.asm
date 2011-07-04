@@ -1,3 +1,7 @@
+; David Costa <david@zarel.net>
+; Progetto per Calcolatori 2
+; "less", un visualizzatore di file di testo
+
 ; Main file
 
 %out Entering less.asm

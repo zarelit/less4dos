@@ -1,10 +1,12 @@
+; David Costa <david@zarel.net>
+; Progetto per Calcolatori 2
+; "less", un visualizzatore di file di testo
+
 ; Buffer management
 
 %out Entering buffer.asm
 
 DATA_S segment public 'data'
-	; lunghezza di un tab in caratteri
-	kTabLen EQU 4
 	; Dimensione del buffer
 	kBufSize EQU 80*25*10 ;4E20 bytes, non sfora il segmento
 	; buffer null terminated, non si sa mai

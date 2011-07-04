@@ -1,3 +1,7 @@
+; David Costa <david@zarel.net>
+; Progetto per Calcolatori 2
+; "less", un visualizzatore di file di testo
+
 ; Codice per disegnare box e riempirli con testo
 
 %out Entering box.asm
