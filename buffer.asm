@@ -25,7 +25,7 @@ DATA_S ends
 CODE_S segment public 'code'
 	assume DS:DATA_S, CS:CODE_S, SS:STACK_S
 
-;BUFFER_FILL_P riempie il buffer continuando la lettura del file
+;BUFFER_FILL_P riempie il buffer per la prima volta
 BUFFER_FILL_P proc near
 	;leggo kBufSize caratteri dal file
 	;(in avanti)
@@ -44,10 +44,13 @@ BUFFER_FILL_P proc near
 	mov byte ptr [BX],00h
 	
 	mov BL,bufStatus
+	or BL,04h ; imposto il bit di SOF raggiunto (start of file)
 	cmp AX,CX ; Controllo se abbiamo raggiunto la fine del file
 	je eofNotReached
-	or BL,01h
-	mov bufStatus,BL ;imposto il bit di EOF raggiunto
+	or BL,01h ; imposto il bit di EOF raggiunto
+	; dato che è la prima lettura, significa che anche
+	; l'inizio del buffer corrisponde con l'inizio del file
+	mov bufStatus,BL 
 	ret
 
 	eofNotReached:
@@ -115,6 +118,10 @@ REFILL_P proc near
 		call QUIT_P
 REFILL_P endp
 
+REWIND_P proc near
+	ret
+REWIND_P endp
+
 ; Scrolldown_p sposta il viewport di una riga
 ; se è possibile. 
 SCROLLDOWN_P proc near
@@ -165,7 +172,10 @@ SCROLLUP_P proc near
 	mov CL,viewPortW ;per scrW
 	xor CH,CH
 	repnz scasb
-	test CX,CX ; uscito per CX=0?
+	; controlliamo se abbiamo passato l'origine
+	cmp DI,offset textBuffer
+	jb hitTop ;se si gestiamo l'evento
+	test CX,CX ; uscito per CX=0? mi sono spostato di una riga intera?
 	jz updateViewPort
 
 	; Passo DUE
@@ -173,18 +183,37 @@ SCROLLUP_P proc near
 	cmp byte ptr [DI],0Dh
 	jnz CRnotPresent
 	dec DI
+	; oltrepassata l'origine?
+	cmp DI, offset textBuffer
+	jb hitTop
 	CRnotPresent:
-	
 	; Passo TRE
 	; cerco LF per scrW caratteri, contando quante volte fallisco in DX
 	xor DL,DL
 	searchRowStart:
 		mov CL,viewPortW
 		repnz scasb
-		test CX,CX
+		cmp DI,offset textBuffer
+		jb hitTopInSearch ; passata l'origine
+		
+		test CX,CX ;spostamento di una riga intera?
 		jnz inizioRiga
 		inc DL
 	jmp searchRowStart
+	
+	hitTopInSearch:
+	;come sempre se SOF allora scroll, altrimenti rifai tutto
+	mov BL,bufStatus
+	test BL,04h
+	jz fillBackward
+	mov DI,offset textBuffer
+	test DL,DL ;la prima riga è corta
+	jz updateViewPort
+	reachRowinSearch:
+		add DI,word ptr viewPortW
+		dec DL
+	jnz reachRowInSearch
+	jmp updateViewPort
 
 	inizioRiga: ;siamo sul carattere che precede LF della riga precedente
 	inc DI
@@ -198,10 +227,20 @@ SCROLLUP_P proc near
 	updateViewPort:
 	mov viewPort,DI
 	jmp outScrollUp
-	;evento hitTop - ripristino il viewport precedente
+	;evento hitTop
+	;ripristino il viewPort precedente se è SOF
+	;altrimenti carico il pezzo precedente di file
 	hitTop:
+	mov BL,bufStatus
+	test BL,04h
+	jz fillBackward
+	mov viewPort,offset textBuffer ; se è SOF
 	mov DI,viewPort
-
+	jmp outScrollUp ; viewPort=inizio del buffer ed esco
+	fillBackward: ;sistemo il buffer
+	call REWIND_P
+	call SCROLLUP_P ;e ritento lo scroll.
+	;jmp outScrollUp
 	outScrollUp:
 	pop ES
 	cld
