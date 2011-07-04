@@ -3,6 +3,9 @@
 %out Entering buffer.asm
 
 DATA_S segment public 'data'
+	; lunghezza di un tab in caratteri
+	kTabLen EQU 4
+
 	; Dimensione del buffer
 	kBufSize EQU 80*25*3
 	; buffer null terminated, non si sa mai
@@ -141,8 +144,43 @@ SCROLLDOWN_P proc near
 	ret
 SCROLLDOWN_P endp
 
+; SCROLLUP_P fa lo scroll verso l'alto di una riga
 SCROLLUP_P proc near
+	;procedura di base
+	;SE si esce dal buffer subito evento hitTop
+	;1) cerco di tornare indietro di viewPortW caratteri. Se non incontro LF, mi sposto. Se lo incontro
+	;2) mi sposto all'ultimo carattere stampabile (prima di 0D) 
+	;3) cerco LF per scrW caratteri, contando il numero di volte. (N)
+	;4) quando lo incontro mi sposto al carattere successivo (primo stampabile)
+	;5) mi sposto di N volte scrW
+	push ES ;salvo ES
+	push DS
+	pop ES ;copio DS in ES
+	std ;si cerca all'indietro
 
+	; Passo UNO
+	mov AL,0Ah ;cerco LF
+	mov DI,viewPort ; a partire dall'origine
+	mov CL,viewPortW ;per scrW
+	xor CH,CH
+	repnz scasb
+	test CX,CX ; uscito per CX=0?
+	jz updateViewPort
+	; Passo DUE
+	
+
+	updateViewPort:
+	mov viewPort,DI
+	pop ES
+	jmp outScrollUp
+	;evento hitTop - ripristino il viewport precedente
+	hitTop:
+	mov DI,viewPort
+
+	outScrollUp:
+	pop ES
+	cld
+	ret
 SCROLLUP_P endp
 
 CODE_S ends

@@ -90,6 +90,8 @@ USER_P proc near
 	;freccia giù, scroll down
 	cmp AH,50h
 	je scrDownChoice
+	cmp AH,48h
+	je scrUpChoice
 	;nessuna scelta, esco senza azioni
 	jmp quitUserP
 
@@ -97,6 +99,9 @@ USER_P proc near
 		call QUIT_P
 	scrDownChoice:
 		call SCROLLDOWN_P
+		jmp quitUserP
+	scrUpChoice:
+		call SCROLLUP_P
 		jmp quitUserP
 
 	quitUserP:
