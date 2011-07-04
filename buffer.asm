@@ -5,9 +5,8 @@
 DATA_S segment public 'data'
 	; lunghezza di un tab in caratteri
 	kTabLen EQU 4
-
 	; Dimensione del buffer
-	kBufSize EQU 80*25*3
+	kBufSize EQU 80*25*1
 	; buffer null terminated, non si sa mai
 	textBuffer DB kBufSize dup(?),00h
 	endOfBuffer DW offset textBuffer
@@ -20,6 +19,8 @@ DATA_S segment public 'data'
 	; bit 0 - EOF reached
 	; bit 1 - End Of String reached
 	bufStatus DB 00h
+	; di quanti byte riempiamo il buffer tornando indietro
+	rewindSize DW ? 
 DATA_S ends
 
 CODE_S segment public 'code'
@@ -96,12 +97,14 @@ REFILL_P proc near
 	mov DX,endOfBuffer ;iniziamo a scrivere da dove avevamo interrotto
 	int 21h
 	jc lblRefillError
-	
+
 	add endOfBuffer,AX ;sposto l'end-of-buffer e termino il buffer
 	mov BX,endOfBuffer
 	mov byte ptr [BX],00h
 	
 	mov BL,bufStatus
+	; se REFILL_P è stata chiamata non è più start of file
+	and BL,0FBh ; resetto SOF
 	cmp AX,CX ; Controllo se abbiamo raggiunto la fine del file
 	je refillEofNotReached
 	or BL,01h
@@ -118,8 +121,110 @@ REFILL_P proc near
 		call QUIT_P
 REFILL_P endp
 
+; REWIND_P serve per caricare il buffer con il contenuto "precedente" nel file
 REWIND_P proc near
+	; interrogo il DOS per sapere il riferimento assoluto nel file
+	mov AH,42h ;SEEK
+	mov AL,01h ;dalla posizione attuale
+	mov BX,fileHandle
+	mov CX,00h ;parte alta dell'offset
+	mov DX,00h ;parte bassa dell'offset
+	int 21h 
+	jc lblToPosError
+	jmp afterPosQuery
+	lblToPosError:
+	jmp lblPosError
+	afterPosQuery:
+
+	; in DX:AX la posizione assoluta dall'inizio del file
+	; mi sposto nel file al byte corrispondente al viewPort
+	mov BX,endOfBuffer
+	sub BX,viewPort ;in BX i byte "visibili"
+	sub AX,BX
+	sbb DX,0 ;in DX:AX la posizione del viewPort nel file
+
+	; se la posizione assoluta è più grande di mezzo buffer
+	; carico mezzo buffer, altrimenti tutti i byte
+	; kBufSize è grande una word quindi
+	mov BX,kBufSize/2 ;kBufSize deve essere pari
+	test DX,DX ;se DX è non zero sicuramente possiamo leggere mezzo buffer
+	jnz sizeFound
+	cmp AX,BX 
+	ja sizeFound ;abbiamo più dati di mezzo buffer
+	; se ci sono pochi byte, ritorniamo indietro di quei pochi
+	; e imposto lo status di SOF
+	mov BX,AX ;in BX di quanti byte dobbiamo tornare indietro
+	mov CL,bufStatus
+	or CL,04h
+	mov bufStatus,CL
+	sizeFound:
+	; spostiamo la posizione assoluta di quei BX bytes
+	sub AX,BX
+	sbb DX,0 ;in DX:AX la posizione da cui iniziare a leggere BX bytes
+	
+	; uso movsb per spostare i dati già presenti
+	; in pratica i dati già esistenti slittano di BX bytes
+	push ES
+	push DS
+	pop ES
+	std
+	mov DI,offset textBuffer+kBufSize-1 ;ultimo byte del buffer
+	mov SI,offset textBuffer+kBufSize-1
+	sub SI,BX 
+	mov CX,kBufSize
+	sub CX,BX ;devo copiare kBufSize-BX bytes
+	muoviStringa:
+	movsb
+	dec CX
+	jnz muoviStringa
+	; repnz movsb
+	cld
+	pop ES
+	
+	push BX ;salvo il numero di caratteri!
+	; spostamento DX:AX -> CX:DX
+	mov CX,DX
+	mov DX,AX ;nuovo offset
+	mov AH,42h ;mi sposto indietro di BX bytes!!
+	mov AL,00h 
+	mov BX,fileHandle
+	int 21h
+	jc lblRewindReadErr
+
+	pop BX ;ripristino numero caratteri!	
+	; chiedo al DOS di caricare nella prima parte del buffer BX bytes
+	mov AH,3Fh
+	mov CX,BX
+	mov BX,fileHandle
+	mov DX,offset textBuffer
+	int 21h
+	jc lblRewindReadErr
+	
+	; aggiorno puntatori buffer
+	mov BX,offset textBuffer
+	add BX,AX
+	mov viewPort,BX ;aggiorno viewPort
+	mov endOfBuffer,offset textBuffer+kBufSize-1
+
+	; aggiorno il puntatore del file
+	mov DX,offset textBuffer+kBufSize-1
+	sub DX,AX ;parte bassa dell'offset
+	mov AH,42h ;spostamento  
+	mov AL,01h ;dalla posizione attuale
+	mov BX,fileHandle
+	mov CX,00h ;parte alta dell'offset
+	int 21h 
+	
+	;finito, ora si tenta lo scrollup
 	ret
+
+
+	lblPosError:
+		mov exitCode,06h
+		call QUIT_P
+	lblRewindReadErr:
+		mov exitCode,05h
+		call QUIT_P	
 REWIND_P endp
 
 ; Scrolldown_p sposta il viewport di una riga

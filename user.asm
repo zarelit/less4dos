@@ -9,6 +9,7 @@ DATA_S segment public 'data'
 	msgCode03 DB 'Impossibile leggere il file dati','$'
 	msgCode04 DB 'Nessun file fornito sulla riga di comando','$'
 	msgCode05 DB 'Errore nella lettura del file dati','$'
+	msgCode06 DB 'Errore lettura della posizione nel file dati','$'
 	msgCodeUnknow DB 'Riscontrato un errore non specificato','$'
 
 	; Menu
@@ -61,6 +62,10 @@ QUIT_P proc near
 	cmp BL,05h
 	jne $+8
 		mov DX,offset msgCode05
+		jmp lblToDos
+	cmp BL,06h
+	jne $+8
+		mov DX,offset msgCode06
 		jmp lblToDos
 	lblUknknownError:
 		mov DX,offset msgCodeUnknow
