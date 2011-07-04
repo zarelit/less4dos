@@ -86,8 +86,28 @@ MAIN_P proc near
 		mov CL,01h
 		mov SI,viewPort
 		call BOX_P
+		jz checkRefill
+		;se BOX_P ritorna non zero è END-OF-BOX 
+		mov BX,bufStatus
+		and BX,0FDh ; clear end of buffer
+		mov bufStatus,BX
 		; Attesa risposta utente
+		lblWaitUser:
 		call USER_P
+	jmp lblEventLoop
+	
+	; terminata la stringa. Dobbiamo proseguire nel file?
+	; Se si ricarica e ridisegna
+	; Se no attendi azione utente
+	checkRefill:
+		;BOX_P ci ha detto che ha finito la stringa.
+		;Quindi è End of buffer
+		mov BX,bufStatus
+		or BX,02h ;set end-of-buffer
+		mov bufStatus,BX
+		test BX,01h ;check for EOF
+		jnz lblWaitUser ;no - il file è finito
+		call REFILL_P
 	jmp lblEventLoop
 
 	lblNoCmdLine:

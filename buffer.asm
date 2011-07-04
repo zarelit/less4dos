@@ -12,6 +12,10 @@ DATA_S segment public 'data'
 	;inizialmente in cima al buffer
 	viewPort DW offset textBuffer
 	viewPortW DB ? ;lunghezza di una riga del viewport
+	; "registro di stato" del buffer
+	; bit 0 - EOF reached
+	; bit 1 - End Of String reached
+	bufStatus DB 00h
 DATA_S ends
 
 CODE_S segment public 'code'
@@ -29,19 +33,22 @@ BUFFER_FILL_P proc near
 	; controllo quanti caratteri ho letto e imposto
 	; l'end of buffer di conseguenza
 	jc lblReadError
-	; Se abbiamo raggiunto la fine del file, settiamo il carry
-	test AX,AX ; raggiunto EOF con la lettura precedente
-	jz lblEOF
-	; Abbiamo letto qualche byte....
+
 	mov endOfBuffer,offset textBuffer
 	add endOfBuffer,AX ;sposto l'end-of-buffer e termino il buffer
 	mov BX,endOfBuffer
 	mov byte ptr [BX],00h
-	clc ;scrolldown_p conta di trovare il carry pulito
-	ret
 	
-	lblEOF:
-	stc
+	mov BX,bufStatus
+	cmp AX,CX ; Controllo se abbiamo raggiunto la fine del file
+	je eofNotReached
+	or BX,01h
+	mov bufStatus,BX ;imposto il bit di EOF raggiunto
+	ret
+
+	eofNotReached:
+	and BX,0FEh ;cancello il bit EOF
+	mov bufStatus,BX
 	ret
 
 	lblReadError:
@@ -49,9 +56,23 @@ BUFFER_FILL_P proc near
 	call QUIT_P
 BUFFER_FILL_P endp
 
+; Lo scopo di REFILL_P e' di riempire il buffer con nuovo contenuto dal file, 
+; mantenendo pero' nel buffer la parte visibile (da viewport alla fine del buffer)
+REFILL_P proc near
+
+REFILL_P endp
+
 ; Scrolldown_p sposta il viewport di una riga
-; se è possibile. Altrimenti prova a riempire il buffer
+; se è possibile. 
 SCROLLDOWN_P proc near
+	; nel caso ci siano entrambi EOF and End Of Buffer non posso
+	; fare scrolling
+	mov BX,bufStatus
+	test BX,01h
+	jz tryScroll
+	test BX,02h
+	jnz dontScroll
+
 	; cerco l'inizio della prossima riga
 	; ci si ferma incontrando LF oppure dopo viewPortW caratteri
 	mov CL,viewPortW
@@ -68,21 +89,8 @@ SCROLLDOWN_P proc near
 	mov viewPort,DI ;aggiorno il viewport
 	pop ES
 	ret
-	lblFineBuffer:
-	;Abbiamo raggiunto la fine del buffer
-	;Ma prima proviamo a vedere se possiamo ancora caricare dal file
-	call BUFFER_FILL_P
-	jc dontScroll
-	; Abbiamo ricaricato il buffer
-	; quindi resettiamo il viewport
-	mov DI,offset textBuffer
-	mov viewPort,DI
-	pop ES
-	ret
 	
-	dontscroll: ;Rimane tutto come prima
-	mov DI,viewPort ;ritorno al DI originale
-	pop ES
+	dontScroll: ;Rimane tutto come prima
 	ret
 SCROLLDOWN_P endp
 

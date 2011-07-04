@@ -218,14 +218,14 @@ BOX_P proc near
 	charLoop:
 		; controllo di posizione
 		cmp DI,DX ;abbiamo oltrepassato il fine box?
-		ja endPrint
+		ja endBox
 		cmp DI,CX ;abbiamo oltrepassato il bordo destro?
 		ja newRow
 
 		;siamo in una posizione valida
 		lodsb
 		cmp AL,00h ;raggiunto il fine stringa?
-		je endPrint
+		je endString
 		cmp AL,0Dh ; Carriage return?
 		je CRHandle
 		cmp AL,0Ah ; Line feed?
@@ -252,10 +252,16 @@ BOX_P proc near
 		add DI,kRowBytes ;LF sposta verticalmente di una riga
 	jmp charLoop
 
-	endPrint: ;fine della stampa
-
-	; Corretta uscita dalla procedura
-	clc ;clear carry - tutto ok
+	; I due possibili modi di uscire dalla funzione
+	; correttamente
+	endString:
+	; fine buffer, ultimo carattere nullo, zero flag settato
+	clc
+	ret	
+	endBox:
+	; buffer non terminato, usciamo con zero flag resettato
+	test AL,AL ;AL è sicuramente non zero
+	clc
 	ret
 
 	; Gestione degli errori incontrati durante il disegno
