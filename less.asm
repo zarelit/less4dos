@@ -18,6 +18,10 @@ DATA_S segment public 'data'
 	exitCode DB 0	;vedi Codici di uscita
 	fileName DB 256 dup(?) ; nome del file di testo da aprire
 	fileHandle DW 0000h ;handler restituito dal S.O.
+
+	outerH DB 24		;parametri per cambiare la presenza
+	outerW DB 80            ;del fullscreen
+	framePresence DB 01h 
 DATA_S ends
 
 ; Main program
@@ -72,18 +76,18 @@ MAIN_P proc near
 	mov CX,2607h
 	int 10h
 
+	
 	; Disegno il menu
 	call PRINT_MENU_P
-
-	; TEST: riempio con il file di testo il buffer
-	; e lo disegno
+	; Riempio il buffer ed entro nel ciclo eventi
 	call BUFFER_FILL_P
 	lblEventLoop:
+		;l'origine è sempre in alto-dx
 		mov DX,0000h
-		mov AH,24
-		mov AL,80
-		mov viewPortW,78
-		mov CL,01h
+		;le dimensioni variano a seconda del fullscreen o meno
+		mov AH,outerH
+		mov AL,outerW
+		mov CL,framePresence
 		mov SI,viewPort
 		call BOX_P
 		jz checkRefill

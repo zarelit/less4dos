@@ -95,8 +95,20 @@ USER_P proc near
 	;freccia giù, scroll down
 	cmp AH,50h
 	je scrDownChoice
+	;freccia su, scroll up
 	cmp AH,48h
 	je scrUpChoice
+	;pagina giù
+	cmp AH,51h
+	je pageDownChoice
+	;pagina su
+	cmp AH,49h
+	je pageUpChoice
+	;fullscreen
+	cmp AL,'f'
+	je fullScreenChoice
+	cmp AL,'F'
+	je fullScreenChoice
 	;nessuna scelta, esco senza azioni
 	jmp quitUserP
 
@@ -108,7 +120,15 @@ USER_P proc near
 	scrUpChoice:
 		call SCROLLUP_P
 		jmp quitUserP
-
+	pageDownChoice:
+		call PAGEDOWN_P
+		jmp quitUserP
+	pageUpChoice:
+		call PAGEUP_P
+		jmp quitUserP
+	fullScreenChoice:
+		call FULLSCREEN_P
+		jmp quitUserP
 	quitUserP:
 	pop AX
 	ret
@@ -127,4 +147,28 @@ PRINT_MENU_P proc near
 	errMenu:
 	call QUIT_P
 PRINT_MENU_P endp
+
+; FULLSCREEN_P commuta tra fullscreen e non
+FULLSCREEN_P proc near
+	mov BL,framePresence
+	test BL,BL
+	jz turnOffFS
+	turnOnFS:
+		;mov outerW,80
+		mov outerH,25
+		mov viewPortW,80
+		mov viewPortH,25
+		mov framePresence,00h
+		ret
+	turnOffFS:
+		;mov outerW,80
+		mov outerH,24
+		mov viewPortW,78
+		mov viewPortH,22
+		mov framePresence,01h
+		;ridisegno il menu scomparso prima
+		call PRINT_MENU_P
+		ret
+FULLSCREEN_P endp
+
 CODE_S ends

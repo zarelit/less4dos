@@ -6,15 +6,17 @@ DATA_S segment public 'data'
 	; lunghezza di un tab in caratteri
 	kTabLen EQU 4
 	; Dimensione del buffer
-	kBufSize EQU 80*25*1
+	kBufSize EQU 80*25*6
 	; buffer null terminated, non si sa mai
 	textBuffer DB kBufSize dup(?),00h
 	endOfBuffer DW offset textBuffer
 	;puntatore all'inizio del testo visibile
 	;inizialmente in cima al buffer
 	viewPort DW offset textBuffer
-	viewPortW DB ? ;lunghezza di una riga del viewport
+	viewPortW DB 78 ;lunghezza di una riga del viewport
 		  DB 00h ;nel caso volessi usarlo come word
+	viewPortH DB 22 ;altezza del viewport
+		  DB 00h
 	; "registro di stato" del buffer
 	; bit 0 - EOF reached
 	; bit 1 - End Of String reached
@@ -404,5 +406,29 @@ SCROLLUP_P proc near
 	cld
 	ret
 SCROLLUP_P endp
+
+; Scrolla di una pagina (secondo le dimensioni del box)
+PAGEDOWN_P proc near
+	mov CX,word ptr viewPortH
+	pageDownLoop:
+		push CX
+		call SCROLLDOWN_P
+		pop CX
+		dec CX
+	jnz pageDownLoop
+	ret
+PAGEDOWN_P endp
+
+; Scrolla di una pagina verso l'alto (secondo le dimensioni del box)
+PAGEUP_P proc near
+	mov CX,word ptr viewPortH
+	pageUpLoop:
+		push CX
+		call SCROLLUP_P
+		pop CX
+		dec CX
+	jnz pageUpLoop
+	ret
+PAGEUP_P endp
 
 CODE_S ends
