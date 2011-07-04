@@ -22,6 +22,9 @@ DATA_S segment public 'data'
 	outerH DB 24		;parametri per cambiare la presenza
 	outerW DB 80            ;del fullscreen
 	framePresence DB 01h 
+
+	scrollUpCount DW 00h
+	scrollDownCount DW 00h ;automatismi scroll up/down
 DATA_S ends
 
 ; Main program
@@ -41,7 +44,11 @@ MAIN_P proc near
 	xor CH,CH
 	;cmp CX,0
 	test CX,CX ; se nessun parametro è stato passato: errore file
-	jz lblNoCmdLine
+	jz lblToNoCmdLine
+	jmp skipNoCmdLine
+	lblToNoCmdLine:
+	jmp lblNoCmdLine
+	skipNoCmdLine:
 	dec CX ; ignoro lo spazio all'inizio. Copio un char di meno
 	repnz movsb ; copio la stringa
 	mov AL,00h ; rendo ASCIIZ la stringa
@@ -56,7 +63,12 @@ MAIN_P proc near
 	mov AL,00h ;apri in sola lettura
 	mov DX,offset fileName
 	int 21h
-	jc lblFileError
+	jc lblToFileError
+	jmp skipFileError
+	lblToFileError:
+	jmp lblFileError
+	skipFileError:
+
 	mov fileHandle,AX
 	
 	; Salvo il modo video corrente
@@ -95,6 +107,24 @@ MAIN_P proc near
 		mov BL,bufStatus
 		and BL,0FDh ; clear end of buffer
 		mov bufStatus,BL
+
+		;ci sono righe da scorrere?
+		autoScrollDown:
+		mov CX,scrollDownCount
+		test CX,CX
+		jz autoScrollUp
+		dec scrollDownCount
+		call SCROLLDOWN_P
+		jmp lblEventLoop
+		
+		autoScrollUp:
+		mov CX,scrollUpCount
+		test CX,CX
+		jz lblWaitUser
+		dec scrollUpCount
+		call SCROLLUP_P
+		jmp lblEventLoop
+
 		; Attesa risposta utente
 		lblWaitUser:
 		call USER_P
@@ -110,7 +140,8 @@ MAIN_P proc near
 		or BL,02h ;set end-of-buffer
 		mov bufStatus,BL
 		test BL,01h ;check for EOF
-		jnz lblWaitUser ;no - il file è finito
+		;jnz lblWaitUser ;no - il file è finito
+		jnz autoScrollDown
 		call REFILL_P
 	jmp lblEventLoop
 

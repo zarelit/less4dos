@@ -6,7 +6,7 @@ DATA_S segment public 'data'
 	; lunghezza di un tab in caratteri
 	kTabLen EQU 4
 	; Dimensione del buffer
-	kBufSize EQU 80*25*6
+	kBufSize EQU 80*25*10 ;4E20 bytes, non sfora il segmento
 	; buffer null terminated, non si sa mai
 	textBuffer DB kBufSize dup(?),00h
 	endOfBuffer DW offset textBuffer
@@ -410,24 +410,14 @@ SCROLLUP_P endp
 ; Scrolla di una pagina (secondo le dimensioni del box)
 PAGEDOWN_P proc near
 	mov CX,word ptr viewPortH
-	pageDownLoop:
-		push CX
-		call SCROLLDOWN_P
-		pop CX
-		dec CX
-	jnz pageDownLoop
+	mov scrollDownCount,CX
 	ret
 PAGEDOWN_P endp
 
 ; Scrolla di una pagina verso l'alto (secondo le dimensioni del box)
 PAGEUP_P proc near
 	mov CX,word ptr viewPortH
-	pageUpLoop:
-		push CX
-		call SCROLLUP_P
-		pop CX
-		dec CX
-	jnz pageUpLoop
+	mov scrollUpCount,CX
 	ret
 PAGEUP_P endp
 

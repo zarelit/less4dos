@@ -13,7 +13,7 @@ DATA_S segment public 'data'
 	msgCodeUnknow DB 'Riscontrato un errore non specificato','$'
 
 	; Menu
-	msgMenu DB '(Q)uit ',00h
+	msgMenu DB '(Q)uit        (F)ullscreen',00h
 
 DATA_S ends
 
