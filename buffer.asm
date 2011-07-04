@@ -21,6 +21,9 @@ DATA_S segment public 'data'
 	bufStatus DB 00h
 	; di quanti byte riempiamo il buffer tornando indietro
 	rewindSize DW ? 
+	physCurLow DW ?
+	physCurHigh DW ?
+	tempBufLen DW ?
 DATA_S ends
 
 CODE_S segment public 'code'
@@ -123,108 +126,88 @@ REFILL_P endp
 
 ; REWIND_P serve per caricare il buffer con il contenuto "precedente" nel file
 REWIND_P proc near
-	; interrogo il DOS per sapere il riferimento assoluto nel file
-	mov AH,42h ;SEEK
-	mov AL,01h ;dalla posizione attuale
+	; Alla fine viewPort deve puntare a circa metà buffer, allo stesso carattere
+	; a cui puntava prima della chiamata.
+	; endOfBuffer punterà alla fine effettiva del buffer e il puntatore fisico del file
+	; deve puntare al carattere che seguirebbe l'ultimo del buffer
+
+	; Otteniamo la posizione fisica all'interno del file effettuando uno
+	; spostamento relativo nullo
+	mov AH,42h ; operazione di seek
+	mov AL,01h ; spostamento relativo alla posizione attuale
 	mov BX,fileHandle
-	mov CX,00h ;parte alta dell'offset
-	mov DX,00h ;parte bassa dell'offset
-	int 21h 
-	jc lblToPosError
-	jmp afterPosQuery
-	lblToPosError:
-	jmp lblPosError
-	afterPosQuery:
+	mov CX,00h ; l'offset si trova in CX:DX
+	mov DX,00h
+	int 21h
+	; se il carry non è settato abbiamo la posizione in DX:AX
+	jc lblGetPosError
+	
+	; salviamo il puntatore fisico (non si sa mai)
+	mov physCurHigh,DX
+	mov physCurLow,AX
 
-	; in DX:AX la posizione assoluta dall'inizio del file
-	; mi sposto nel file al byte corrispondente al viewPort
-	mov BX,endOfBuffer
-	sub BX,viewPort ;in BX i byte "visibili"
-	sub AX,BX
-	sbb DX,0 ;in DX:AX la posizione del viewPort nel file
-
-	; se la posizione assoluta è più grande di mezzo buffer
-	; carico mezzo buffer, altrimenti tutti i byte
-	; kBufSize è grande una word quindi
-	mov BX,kBufSize/2 ;kBufSize deve essere pari
-	test DX,DX ;se DX è non zero sicuramente possiamo leggere mezzo buffer
-	jnz sizeFound
-	cmp AX,BX 
-	ja sizeFound ;abbiamo più dati di mezzo buffer
-	; se ci sono pochi byte, ritorniamo indietro di quei pochi
-	; e imposto lo status di SOF
-	mov BX,AX ;in BX di quanti byte dobbiamo tornare indietro
+	; valutiamo di quanti byte possiamo shiftare il buffer
+	; al massimo lo scrolling è di kBufSize/2 in modo da avere
+	; qualche riga disponibile in entrambe le direzioni di
+	; scorrimento
+	; kBufSize è sempre utilizzato come quantità a 16 bit
+	; (deve stare comunque dentro il segmento dati)
+	; La posizione assoluta in DX:AX è anche il numero di byte
+	; già letti
+	mov BX,kBufSize/2
+	test DX,DX ;DX non zero=abbiamo più di 64K disponibili
+	jnz skipResize ;saltiamo il ridimensionamento
+	cmp AX,kBufSize/2 ;controlliamo di avere kBufSize/2 bytes da poter caricare
+	jnb skipResize ;se abbiamo esattamente kBufSize/2 o più non ridimensioniamo
+	mov BX,AX ;possiamo caricare solo BX bytes
+	; se carichiamo meno di kBufSize/2 è perchè abbiamo raggiunto l'inizio del file
 	mov CL,bufStatus
-	or CL,04h
+	or CL,04h ;setto SOF
 	mov bufStatus,CL
-	sizeFound:
-	; spostiamo la posizione assoluta di quei BX bytes
-	sub AX,BX
-	sbb DX,0 ;in DX:AX la posizione da cui iniziare a leggere BX bytes
+
+	skipResize:
+	;BX=numero di byte di rewind
+	mov rewindSize,BX
 	
-	; uso movsb per spostare i dati già presenti
-	; in pratica i dati già esistenti slittano di BX bytes
-	push ES
-	push DS
-	pop ES
-	std
-	mov DI,offset textBuffer+kBufSize-1 ;ultimo byte del buffer
-	mov SI,offset textBuffer+kBufSize-1
-	sub SI,BX 
-	mov CX,kBufSize
-	sub CX,BX ;devo copiare kBufSize-BX bytes
-	muoviStringa:
-	movsb
-	dec CX
-	jnz muoviStringa
-	; repnz movsb
-	cld
-	pop ES
-	
-	push BX ;salvo il numero di caratteri!
-	; spostamento DX:AX -> CX:DX
-	mov CX,DX
-	mov DX,AX ;nuovo offset
-	mov AH,42h ;mi sposto indietro di BX bytes!!
-	mov AL,00h 
+	; Lo spostamento è di BX bytes dopo aver allineato il puntatore fisico con
+	; il viewPort
+	; Mi sposto indietro di endOfBuffer-viewPort
+	mov CX,physCurHigh
+	mov DX,physCurLow
+	; in CX:DX il punt.fisico che ora sposto indietro
+	mov BX,endOfBuffer
+	sub BX,viewPort
+	mov tempBufLen,BX ;salvo la lunghezza del buffer (non si sa mai)
+	; ora decremento il puntatore fisico di BX
+	sub DX,BX
+	sbb CX,0 ;considero un eventuale prestito	
+	; A questo punto CX:DX è allineato con viewPort
+	; Mi devo spostare indietro ancora di rewindSize caratteri
+	mov AX,rewindSize
+	sub DX,AX
+	sbb CX,0 ;considero sempre un eventuale prestito
+	; Ora CX:DX punta esattamente a quello che andrà inserito
+	; all'inizio del buffer
+	mov AH,42h ;seek
+	mov AL,00h ;dall'origine
 	mov BX,fileHandle
-	int 21h
-	jc lblRewindReadErr
+	int 21h	
+	jc lblGetPosError
+	; A questo punto il file è pronto per essere letto.
+	; Ma sovrascriverebbe i dati già esistenti tra viewPort e endOfBuffer
+	; Si distinguono due casi, quello in cui l'inserimento di nuovi dati non comporta
+	; lo slittamento di dati fuori dal buffer e quello in cui dei dati vengono persi
+	; Basta controllare se tempBufLen+rewindSize è minore di kBufSize
+	mov BX,rewindSize
+	add BX,tempBufLen
+	cmp BX,offset textBuffer+kBufSize ;puntatore alla fine in memoria del buffer
+	jbe inPlace; non scarto caratteri
+	; scarto caratteri
+		
 
-	pop BX ;ripristino numero caratteri!	
-	; chiedo al DOS di caricare nella prima parte del buffer BX bytes
-	mov AH,3Fh
-	mov CX,BX
-	mov BX,fileHandle
-	mov DX,offset textBuffer
-	int 21h
-	jc lblRewindReadErr
-	
-	; aggiorno puntatori buffer
-	mov BX,offset textBuffer
-	add BX,AX
-	mov viewPort,BX ;aggiorno viewPort
-	mov endOfBuffer,offset textBuffer+kBufSize-1
-
-	; aggiorno il puntatore del file
-	mov DX,offset textBuffer+kBufSize-1
-	sub DX,AX ;parte bassa dell'offset
-	mov AH,42h ;spostamento  
-	mov AL,01h ;dalla posizione attuale
-	mov BX,fileHandle
-	mov CX,00h ;parte alta dell'offset
-	int 21h 
-	
-	;finito, ora si tenta lo scrollup
-	ret
-
-
-	lblPosError:
+	lblGetPosError:
 		mov exitCode,06h
 		call QUIT_P
-	lblRewindReadErr:
-		mov exitCode,05h
-		call QUIT_P	
 REWIND_P endp
 
 ; Scrolldown_p sposta il viewport di una riga
