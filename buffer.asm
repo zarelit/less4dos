@@ -8,7 +8,7 @@
 
 DATA_S segment public 'data'
 	; Dimensione del buffer
-	kBufSize EQU 80*25*10 ;4E20 bytes, non sfora il segmento
+	kBufSize EQU 80*25*1 ;4E20 bytes, non sfora il segmento
 	; buffer null terminated, non si sa mai
 	textBuffer DB kBufSize dup(?),00h
 	endOfBuffer DW offset textBuffer
@@ -76,7 +76,7 @@ BUFFER_FILL_P endp
 REFILL_P proc near
 	; prima parte, copio da viewPort alla fine della stringa
 	; e sposto viewPort in testa
-	; dato che BOX_P è uscita con end-of-string in DI c'è l'offset
+	; dato che BOX_P è uscita con end-of-string in SI c'è l'offset
 	; della fine della stringa, pertanto
 	; i caratteri da copiare sono SI-viewPort
 	dec SI
