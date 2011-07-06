@@ -22,6 +22,8 @@ DATA_S segment public 'data'
 	exitCode DB 0	;vedi Codici di uscita
 	fileName DB 256 dup(?) ; nome del file di testo da aprire
 	fileHandle DW 0000h ;handler restituito dal S.O.
+	fileSizeHigh DW ? ;dimensione del file di testo
+	fileSizeLow DW ?
 
 	outerH DB 24		;parametri per cambiare la presenza
 	outerW DB 80            ;del fullscreen
@@ -74,6 +76,7 @@ MAIN_P proc near
 	skipFileError:
 
 	mov fileHandle,AX
+	call GETFILESIZE_P
 	
 	; Salvo il modo video corrente
 	; (chiamata BIOS getVideoMode)
@@ -92,7 +95,6 @@ MAIN_P proc near
 	mov CX,2607h
 	int 10h
 
-	
 	; Disegno il menu
 	call PRINT_MENU_P
 	; Riempio il buffer ed entro nel ciclo eventi
@@ -107,6 +109,7 @@ MAIN_P proc near
 		mov SI,viewPort
 		call BOX_P
 		jz checkRefill
+		mov lastDrawn,SI
 		;se BOX_P ritorna non zero è END-OF-BOX 
 		mov BL,bufStatus
 		and BL,0FDh ; clear end of buffer
@@ -131,6 +134,7 @@ MAIN_P proc near
 
 		; Attesa risposta utente
 		lblWaitUser:
+		call POSITION_P
 		call USER_P
 	jmp lblEventLoop
 	

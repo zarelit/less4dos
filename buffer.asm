@@ -28,6 +28,8 @@ DATA_S segment public 'data'
 	physCurLow DW ?
 	physCurHigh DW ?
 	tempBufLen DW ?
+	;lastDrawn serve solo per la percentuale
+	lastDrawn DW ? ;successivo all'ultimo byte disegnato
 DATA_S ends
 
 CODE_S segment public 'code'
@@ -173,6 +175,8 @@ REWIND_P proc near
 	; (deve stare comunque dentro il segmento dati)
 	; La posizione assoluta in DX:AX è anche il numero di byte
 	; già letti
+	mov AL,bufStatus
+	and AL,0FEh ;cancello l'EOF
 	mov BX,kBufSize/2
 	test CX,CX ;CX non zero=abbiamo più di 64K disponibili
 	jnz skipResize ;saltiamo il ridimensionamento
@@ -180,11 +184,10 @@ REWIND_P proc near
 	jnb skipResize ;se abbiamo esattamente kBufSize/2 o più non ridimensioniamo
 	mov BX,DX ;possiamo caricare solo BX bytes
 	; Se possiamo caricare meno di kBufSize/2 allora abbiamo raggiunto SOF
-	mov AL,bufStatus
 	or AL,04h
-	mov bufStatus,AL
 
 	skipResize:
+	mov bufStatus,AL
 	;BX=numero di byte di rewind
 	mov rewindSize,BX
 	
