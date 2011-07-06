@@ -154,27 +154,6 @@ REWIND_P proc near
 	mov physCurHigh,DX
 	mov physCurLow,AX
 
-	; valutiamo di quanti byte possiamo shiftare il buffer
-	; al massimo lo scrolling è di kBufSize/2 in modo da avere
-	; qualche riga disponibile in entrambe le direzioni di
-	; scorrimento
-	; kBufSize è sempre utilizzato come quantità a 16 bit
-	; (deve stare comunque dentro il segmento dati)
-	; La posizione assoluta in DX:AX è anche il numero di byte
-	; già letti
-	mov BX,kBufSize/2
-	test DX,DX ;DX non zero=abbiamo più di 64K disponibili
-	jnz skipResize ;saltiamo il ridimensionamento
-	cmp AX,kBufSize/2 ;controlliamo di avere kBufSize/2 bytes da poter caricare
-	jnb skipResize ;se abbiamo esattamente kBufSize/2 o più non ridimensioniamo
-	mov BX,AX ;possiamo caricare solo BX bytes
-
-	skipResize:
-	;BX=numero di byte di rewind
-	mov rewindSize,BX
-	
-	; Lo spostamento è di BX bytes dopo aver allineato il puntatore fisico con
-	; il viewPort
 	; Mi sposto indietro di endOfBuffer-viewPort
 	mov CX,physCurHigh
 	mov DX,physCurLow
@@ -185,6 +164,30 @@ REWIND_P proc near
 	; ora decremento il puntatore fisico di BX
 	sub DX,BX
 	sbb CX,0 ;considero un eventuale prestito	
+
+	; valutiamo di quanti byte possiamo shiftare il buffer
+	; al massimo lo scrolling è di kBufSize/2 in modo da avere
+	; qualche riga disponibile in entrambe le direzioni di
+	; scorrimento
+	; kBufSize è sempre utilizzato come quantità a 16 bit
+	; (deve stare comunque dentro il segmento dati)
+	; La posizione assoluta in DX:AX è anche il numero di byte
+	; già letti
+	mov BX,kBufSize/2
+	test CX,CX ;CX non zero=abbiamo più di 64K disponibili
+	jnz skipResize ;saltiamo il ridimensionamento
+	cmp DX,kBufSize/2 ;controlliamo di avere kBufSize/2 bytes da poter caricare
+	jnb skipResize ;se abbiamo esattamente kBufSize/2 o più non ridimensioniamo
+	mov BX,DX ;possiamo caricare solo BX bytes
+	; Se possiamo caricare meno di kBufSize/2 allora abbiamo raggiunto SOF
+	mov AL,bufStatus
+	or AL,04h
+	mov bufStatus,AL
+
+	skipResize:
+	;BX=numero di byte di rewind
+	mov rewindSize,BX
+	
 	; A questo punto CX:DX è allineato con viewPort
 	; Mi devo spostare indietro ancora di rewindSize caratteri
 	mov AX,rewindSize
@@ -192,18 +195,6 @@ REWIND_P proc near
 	sbb CX,0 ;considero sempre un eventuale prestito
 	; Ora CX:DX punta esattamente a quello che andrà inserito
 	; all'inizio del buffer
-	; Controllo in questo punto se sono all'inizio del file o meno
-	mov BL,bufStatus
-	test CX,CX
-	jnz nonSOF
-	test DX,DX
-	jnz nonSOF
-	or BL,04h ;set SOF
-	jmp saveSOF
-	nonSOF:
-	and BL,0FBh
-	saveSOF:
-	mov bufStatus,BL
 	mov AH,42h ;seek
 	mov AL,00h ;dall'origine
 	mov BX,fileHandle
