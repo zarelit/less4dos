@@ -168,10 +168,6 @@ REWIND_P proc near
 	cmp AX,kBufSize/2 ;controlliamo di avere kBufSize/2 bytes da poter caricare
 	jnb skipResize ;se abbiamo esattamente kBufSize/2 o più non ridimensioniamo
 	mov BX,AX ;possiamo caricare solo BX bytes
-	; se carichiamo meno di kBufSize/2 è perchè abbiamo raggiunto l'inizio del file
-	mov CL,bufStatus
-	or CL,04h ;setto SOF
-	mov bufStatus,CL
 
 	skipResize:
 	;BX=numero di byte di rewind
@@ -196,6 +192,18 @@ REWIND_P proc near
 	sbb CX,0 ;considero sempre un eventuale prestito
 	; Ora CX:DX punta esattamente a quello che andrà inserito
 	; all'inizio del buffer
+	; Controllo in questo punto se sono all'inizio del file o meno
+	mov BL,bufStatus
+	test CX,CX
+	jnz nonSOF
+	test DX,DX
+	jnz nonSOF
+	or BL,04h ;set SOF
+	jmp saveSOF
+	nonSOF:
+	and BL,0FBh
+	saveSOF:
+	mov bufStatus,BL
 	mov AH,42h ;seek
 	mov AL,00h ;dall'origine
 	mov BX,fileHandle
@@ -214,30 +222,31 @@ REWIND_P proc near
 	; scarto caratteri 
 	nonInPlace:
 		std
-		mov SI,endOfBuffer
-		dec SI ;viene usato il terminatore di fine buffer
-		mov CX,BX
-		sub CX,kBufSize ;numero di caratteri effettivamente scartati
-
-		; sistemo il viewPort
-		mov AX, viewPort
-		add AX, rewindSize
-		sub AX,CX
-		dec AX
-		mov viewPort, AX
-
-		sub SI,CX ;SI è OK
-		mov DI,offset textBuffer+kBufSize
-		dec DI
-		mov BX,tempBufLen
-		sub BX,CX
-		xchg BX,CX
-		; salvo sullo stack di quanto deve spostarsi il puntatore fisico
+		;metti in AX il # di char tra l'origine del buffer e il viewport
+		mov AX,viewPort
+		sub AX,offset textBuffer
+		;# caratteri da copiare=kBufSize-rewindSize
+		mov CX,kBufSize
+		sub CX,rewindSize
 		push CX
-		repnz movsb
-		;aggiorno l'end of buffer
-		mov endOfBuffer,offset textBuffer+kBufSize
-		cld
+		; SI=(offset textBuffer+kBufSize)-rewindSize-1+(offset textBuffer-viewPort)
+		mov SI,CX
+		add SI,offset textBuffer
+		dec SI
+		add SI,AX
+		; DI=offset textBuffer+kBufSize-1
+		mov DI,offset textBuffer
+		add DI,kBufSize
+		dec DI
+		; sposto
+		rep movsb
+		; aggiorno puntatori
+		mov endOfBuffer,offset textBuffer + kBufSize
+		; viewport=old viewport+rewindSize-AX
+		mov BX,viewPort
+		add BX,rewindSize
+		sub BX,AX
+		mov viewPort,BX
 		jmp fillTopBuffer
 	; non scarto caratteri
 	inPlace:
