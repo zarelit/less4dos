@@ -8,7 +8,7 @@
 
 DATA_S segment public 'data'
 	; Dimensione del buffer
-	kBufSize EQU 80*25*1 ;4E20 bytes, non sfora il segmento
+	kBufSize EQU 80*25*5 
 	; buffer null terminated, non si sa mai
 	textBuffer DB kBufSize dup(?),00h
 	endOfBuffer DW offset textBuffer
@@ -22,6 +22,7 @@ DATA_S segment public 'data'
 	; "registro di stato" del buffer
 	; bit 0 - EOF reached
 	; bit 1 - End Of String reached
+	; bit 2 - Start Of file
 	bufStatus DB 00h
 	; di quanti byte riempiamo il buffer tornando indietro
 	rewindSize DW ? 
@@ -52,6 +53,8 @@ BUFFER_FILL_P proc near
 	add endOfBuffer,AX ;sposto l'end-of-buffer e termino il buffer
 	mov BX,endOfBuffer
 	mov byte ptr [BX],00h
+	
+	mov viewPort,offset textBuffer
 	
 	mov BL,bufStatus
 	or BL,04h ; imposto il bit di SOF raggiunto (start of file)
@@ -426,4 +429,15 @@ PAGEUP_P proc near
 	ret
 PAGEUP_P endp
 
+; Torna subito alla cima del file
+RESTART_P proc near
+	mov AH,42h
+	mov AL,00h
+	mov DX,0000h
+	mov CX,0000h
+	mov BX,fileHandle
+	int 21h
+	call BUFFER_FILL_P
+	ret
+RESTART_P endp
 CODE_S ends

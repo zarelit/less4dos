@@ -17,8 +17,17 @@ DATA_S segment public 'data'
 	msgCodeUnknow DB 'Riscontrato un errore non specificato','$'
 
 	; Menu
-	msgMenu DB '(Q)uit        (F)ullscreen',00h
+	msgMenu DB '(Q)uit        (F)ullscreen        (F1) Help',00h
 	msgPosition DB '   %',00h
+	msgHelp DB 0Dh,0Ah,' "Less" e'' un semplice visualizzatore di file '
+		DB 'di testo ispirato dal piu'' noto programma per DOS "more".'
+		DB 0Dh,0Ah,' Comandi disponibili:',0Dh,0Ah
+		DB ' I tasti freccia su/giu scorrono riga per riga all''interno del file',0Dh,0Ah
+		DB ' I tasti pagina su/pagina giu per lo scorrimento di pagina',0Dh,0Ah
+		DB ' Il tasto "home" per ritornare all''inizio del file',0Dh,0Ah
+		DB ' Il tasto "Q" o "ESC" per uscire dal programma.',0Dh,0Ah
+		DB ' Il tasto "F1" per visualizzare nuovamente questa schermata.',0Dh,0Ah,0Dh,0Ah
+		DB 0Dh,0Ah,'        =>Premi un tasto qualunque per tornare al testo<= ',00h
 
 DATA_S ends
 
@@ -92,10 +101,12 @@ USER_P proc near
 	int 16h ; routine BIOS attendi tasto
 	; AL=ASCII, AH=scancode
 	
-	;uscita dal programma
+	;uscita dal programma (anche ESC)
 	cmp AL,'q'
 	je quitChoice
 	cmp AL,'Q'
+	je quitChoice
+	cmp AH,01h
 	je quitChoice
 	;freccia giù, scroll down
 	cmp AH,50h
@@ -114,6 +125,12 @@ USER_P proc near
 	je fullScreenChoice
 	cmp AL,'F'
 	je fullScreenChoice
+	; Ritorno all'inizio del file
+	cmp AH,47h
+	je homeChoice
+	; Stampa help (Tasto F1)
+	cmp AH,3Bh
+	je helpChoice
 	;nessuna scelta, esco senza azioni
 	jmp quitUserP
 
@@ -133,6 +150,12 @@ USER_P proc near
 		jmp quitUserP
 	fullScreenChoice:
 		call FULLSCREEN_P
+		jmp quitUserP
+	homeChoice:
+		call RESTART_P
+		jmp quitUserP
+	helpChoice:
+		call HELP_P
 		jmp quitUserP
 	quitUserP:
 	pop AX
@@ -175,6 +198,20 @@ FULLSCREEN_P proc near
 		call PRINT_MENU_P
 		ret
 FULLSCREEN_P endp
+
+; Apre un riquadro con del testo informativo. Funzione dei tasti e autore.
+HELP_P proc near
+	mov AH,16
+	mov AL,69
+	mov CL,01h
+	mov DL,5
+	mov DH,3
+	mov SI,offset msgHelp
+	call BOX_P
+	mov AH,00h
+	int 16h ;aspetta un qualunque tasto per uscire
+	ret
+HELP_P endp
 
 ; POSITION_P disegna il box con la posizione che abbiamo raggiunto all'interno del file
 POSITION_P proc near	
