@@ -109,7 +109,6 @@ MAIN_P proc near
 		mov SI,viewPort
 		call BOX_P
 		jz checkRefill
-		mov lastDrawn,SI
 		;se BOX_P ritorna non zero è END-OF-BOX 
 		mov BL,bufStatus
 		and BL,0FDh ; clear end of buffer
@@ -117,6 +116,8 @@ MAIN_P proc near
 
 		;ci sono righe da scorrere?
 		autoScrollDown:
+		dec SI
+		mov lastDrawn, SI
 		mov CX,scrollDownCount
 		test CX,CX
 		jz autoScrollUp
