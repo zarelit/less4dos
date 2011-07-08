@@ -253,6 +253,15 @@ POSITION_P proc near
 	;in CX:BX il filesize
 	mov CX,fileSizeHigh
 	mov BX,fileSizeLow
+
+	test CX,CX
+	jnz keepCalcPos
+	test BX,BX
+	jnz keepCalcPos
+	; Filesize=0, file is finished
+	jmp lblCento
+
+	keepCalcPos:
 	call DIV32_P
 
 	cmp AX,64h ;100
